@@ -1,0 +1,104 @@
+#macro(fields $bean $pr)
+#set($i=0)
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+#if ($i>0)
+    ,${pr}${field.Name} ${field.Type}
+#else
+		${pr}${field.Name} ${field.Type}
+#end
+#set($i=$i+1)
+#end
+
+#end
+
+#macro(where $bean $pr)
+#set($i=0)
+#foreach($field in $bean.PrimaryKey.Column)
+#if ($i>0)
+    AND 	${field.Name} =	${pr}${field.Name}
+#else
+  				${field.Name}= ${pr}${field.Name}
+#end
+#set($i=$i+1)
+#end
+#end
+
+#macro(pk $bean $pr)
+#set($i=0)
+#foreach($field in $bean.PrimaryKey.Column)
+#if ($i>0)
+    ,	${pr}${field.Name}
+#else
+  ${pr}${field.Name}
+#end
+#set($i=$i+1)
+#end
+#end
+
+<doc><![CDATA[
+CREATE OR REPLACE PROCEDURE A_U_${bean.Name}(
+         #fields($bean "in_")
+
+)
+AS
+   is_upadate         NUMBER        := 0;
+
+	CURSOR c_${bean.Name}
+   IS
+      SELECT *
+      FROM
+		  	${bean.Name}
+		  WHERE
+#where($bean "in_")  ;
+BEGIN
+
+    FOR cr IN c_${bean.Name}
+		LOOP
+ 			is_upadate := 1;
+	  	UPDATE ${bean.Name}  SET
+#set($i=0)
+#foreach($field in $bean.Attribute.Column)
+#set($j="  ")
+#if ($i>0)
+#set($j=", ")
+#end
+			$j ${field.Name}=	in_${field.Name}
+#set($i=$i+1)
+#end
+ 			WHERE
+#where($bean "in_")
+ ;
+
+	END LOOP;
+	if is_upadate =0 then
+#set($i=0)
+	INSERT INTO ${bean.Name} (
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+#set($j="		  ")
+#if ($i>0)
+#set($j="		, ")
+#end
+    $j ${field.Name}
+#set($i=$i+1)
+#end
+)
+VALUES (
+#set($i=0)
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+#set($j="		  ")
+#if ($i>0)
+#set($j="		, ")
+#end
+    $j in_${field.Name}
+#set($i=$i+1)
+#end
+
+	);
+
+END IF;
+ COMMIT;
+
+END;
+]]>
+</doc>
+

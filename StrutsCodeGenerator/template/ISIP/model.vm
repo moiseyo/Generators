@@ -1,0 +1,129 @@
+##
+##  Copyright(C) 2006 Sprint Inc
+##
+##  This library is free software; you can redistribute it and/or
+##  modify it under the terms of the GNU Lesser General Public
+##  License as published by the Free Software Foundation; either
+##  version 2.1 of the License, or (at your option) any later version.
+##
+##  This library is distributed in the hope that it will be useful,
+##  but WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+##  Lesser General Public License for more details.
+##
+##  You should have received a copy of the GNU Lesser General Public
+##  License along with this library; if not, write to the Free Software
+##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+##
+//---------------------------------------------------------
+// Application: $property.Name
+// Author     : $property.Author
+// File       : ${bean.Name}.java
+//
+// Copyright $year $property.Company
+// Created at $date.Time
+// 
+//---------------------------------------------------------
+
+package ${build.Package}.model;
+
+import java.util.*;
+
+public class ${bean.Name} {
+#set($columns = $util.getAllColumns($bean))
+#foreach ($column in $columns)
+  // $column.Name; $column.title
+  private $util.fqJavaType($column.Type) $column.Name;
+  #if(($column.Type == "date") || ($column.Type == "timestamp") || $util.isNumberType($column.Type))
+  private String ${column.Name}_cond;
+  #end
+#end
+
+public  ${bean.Name}( )
+{
+}
+public  ${bean.Name}( ${bean.Name} that)
+{
+#foreach ($column in $columns)
+        	
+   $column.Name = that.${column.Name};
+#end
+}
+
+
+public boolean isValid()
+{
+#foreach($pk in $bean.PrimaryKey.Column)#set ($n = $pk.Name)
+
+  #if ($pk.Type =="string")
+  if ($n==null || "".equals($n))
+	 {
+		 return false;
+		 
+	 }
+  #end
+  #if ($pk.Type =="int")|($pk.Type =="double")
+  #else
+    if ($n==null)
+    {
+     return false;
+    }
+  #end 
+     
+#end
+	return true;
+}
+#foreach ($column in $columns)#set($n = $column.Name)
+  public $util.fqJavaType($column.Type) get$util.firstUpper($n)() {
+  #if ($column.Type =="string")
+  	if ($n == null)
+  	  return $n;
+//  	return  ${n}.trim();   
+  	return  ${n}.replaceAll("\\s+$", ""); 
+  #else
+    return $n;
+  #end
+  }
+  #if(($column.Type == "date") || ($column.Type == "timestamp") || $util.isNumberType($column.Type))
+   public String get$util.firstUpper($n)_cond() {
+    	return  ${n}_cond;   
+  }
+  #end 	
+#end
+
+#foreach ($column in $columns)#set($n = $column.Name)
+  public void set$util.firstUpper($n)($util.fqJavaType($column.Type) $n) {
+    this.$n = $n;
+  }
+  
+  #if(($column.Type == "date") || ($column.Type == "timestamp") || $util.isNumberType($column.Type))
+   public void set$util.firstUpper($n)_cond(String ${n}_cond) {
+    	this.${n}_cond =${n}_cond;   
+  }
+  #end
+#end
+  public String toString()
+  {
+	      StringBuffer buffer = new StringBuffer();
+        buffer.append("${bean.Name}[");
+#foreach ($column in $columns)
+ #set($n = $column.Name)
+        buffer.append(",$n = ").append($n);
+#end
+        buffer.append("]");
+        return buffer.toString();
+  }
+  public void Clear()
+  {
+    
+#foreach ($column in $columns)
+ #if( $util.isNumberType($column.Type))
+ $column.Name = 0;
+ #else
+ $column.Name = null;	
+ #end           
+   
+#end
+
+}  
+}

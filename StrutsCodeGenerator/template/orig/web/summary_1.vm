@@ -1,0 +1,365 @@
+##
+##
+##  This library is free software; you can redistribute it and/or
+##  modify it under the terms of the GNU Lesser General Public
+##  License as published by the Free Software Foundation; either
+##  version 2.1 of the License, or (at your option) any later version.
+##
+##  This library is distributed in the hope that it will be useful,
+##  but WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+##  Lesser General Public License for more details.
+##
+##  You should have received a copy of the GNU Lesser General Public
+##  License along with this library; if not, write to the Free Software
+##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+##
+<doc>
+<header>
+<![CDATA[
+<%@include file="/common/taglibs.jsp" %>
+##<%@ taglib uri="/WEB-INF/struts-html.tld" prefix="html" %>
+##<%@ taglib uri="/WEB-INF/struts-bean.tld" prefix="bean" %>
+##<%@ taglib uri="/WEB-INF/struts-logic.tld" prefix="logic" %>
+<%@ include file="/security/test_credits.jsp" %>
+##<jsp:useBean id="optionsValues" class="com.sprint.peps.taglibs.OptionsForm" scope="session"/>
+##<jsp:setProperty  name ="optionsValues"  property="debug" value="true"/>
+##<jsp:setProperty  name ="optionsValues"  property="all" value="%"/>
+<%@ page import = "java.util.* "%>
+]]>
+</header>
+#if ($bean.sorting != "0")
+#set($bean.sorting="1")
+#end 
+#set($beansorting="1")
+#set($formName="$util.firstLower($bean.Name)Form") 
+
+<![CDATA[<html:form action="/${bean.Name}/list.do">]]>
+<content>
+<![CDATA[
+<%
+  
+  boolean bExtandedSearch=true;
+  bExtandedSearch = "Y".equalsIgnoreCase((String) session
+									.getAttribute("APP_EXT_SEARCH"));
+//    Select section
+	boolean bUseSelect = true;
+//			bUseSelect = false;
+	String  sWidth="501";
+	//bean.sorting=$beansorting
+// Create    Visible fields   variables	
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+     boolean b${field.Name}= true;
+#end
+
+// Make a stab to hide varables 
+
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+//      b${field.Name}= false;
+#end
+
+// Sed Display fiels sizes
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+   #set($max_size = $field.getValidation().getMaxLength())
+   #if ($max_size > 12)
+   	#set($max_size=12)
+   #end
+    String size${field.Name}="$max_size" ;
+//    size${field.Name}="$field.getValidation().getMaxLength()"
+#end
+%>]]>
+  <header>
+    <![CDATA[&nbsp;&nbsp;<bean:message key="label.list"/> <bean:message key="title${bean.Name}"/>
+        <span class="addMe" >
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ 	
+ 	<html:link styleClass="menubutton" href="ISIP_SURCHARGE_RATE/add.do" ><bean:message key="label.add"/></html:link>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<peps:totalrecords />
+    </span>
+     <input TYPE="hidden" name="pager.offset"/>
+     <!---   Sorting fields -->     
+    ]]>
+#if ($beansorting)
+  <![CDATA[ <peps:sortprep debug="false" beanName="${bean.Name}"/>  ]]>
+#end 
+  </header>
+    <table>
+      <header>
+       <column/>
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+<![CDATA[	
+<%
+ if (b$field.Name)
+ {
+%>]]> <column>
+ #if ($beansorting)
+    <![CDATA[<peps:sortmessage key="${bean.Name}.${field.Name}" fieldName="${field.Name}"/>      ]]>
+ #else       
+     <![CDATA[<bean:message key="${bean.Name}.${field.Name}"/>      ]]>
+ #end       
+   </column><![CDATA[	
+<%
+ }
+%>]]>	
+#end
+     </header>
+<![CDATA[
+<!--  Search Fields  -->
+<%
+  if (bUseSelect)
+  {
+%>
+  <tr>
+  <td> <html:link  styleClass="menubutton"  href="${bean.name}/clear.do" ><bean:message key="label.clear"/></html:link>&nbsp;</td>
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+#if (($field.Type == "string")  || ($field.Type == "memo"))
+	
+<%
+   if (b${field.Name} )
+   {
+%>
+        <td>
+        <html:text property="${field.Name}" size="<%=size${field.Name}%>" styleId ="${field.Name}_id"/>
+       </td>
+
+<%
+   }
+%>
+#else
+<%
+   if (b${field.Name} )
+   {
+%>
+<% if (bExtandedSearch) {	%>
+	#if(($$field.Type == "date") || ($$field.Type == "timestamp"))
+
+    <peps:calendar property = "$field.Name" formName = "$formName"/>
+    <peps:searchcondition name = "${field.Name}_cond"
+        property = "${field.Name}_cond"
+        selected ="="
+        debug = "false"/>
+	#elseif  ($util.isNumberType($$field.Type))
+	<html:text property="${field.Name}" size="<%=size${field.Name}%>" styleId ="${field.Name}_id"/>
+	<peps:searchcondition name = "${field.Name}_cond"
+        property = "${field.Name}_cond"
+        selected ="="
+        debug = "false"/>
+	#else
+	  &nbsp;
+	#end
+<%  } %>	
+</td>
+<%
+    }
+%>
+#end
+#end
+</tr>
+<%
+}
+%>
+	
+<!-- End  Search Fields  -->
+
+<!--  Search Commands   -->	
+<tr>
+  <TD COLSPAN="3">
+      
+    <html:link  styleClass="menubutton"  href="javascript:window.document.forms[0].submit();" >
+   <bean:message key="label.search"/></html:link>&nbsp;]]>
+      
+          
+  </TD>
+##   <td bgcolor="#FFFFFF" ALIGN="center" COLSPAN="8">
+  <td ALIGN="center" COLSPAN="8">
+## <html:link href="${bean.Name}/add.do" ><bean:message key="label.add"/></html:link>
+ </td>
+</tr>
+ <tr>
+        <td COLSPAN="6">
+          
+          <bean:write name="pagerHeader" scope="request" filter="false"/><%! String key;%>
+         </td>
+ </tr>
+     <logic:iterate id="$util.firstLower($bean.Name)" name="${bean.Name.toUpperCase()}S" type="${build.Package}.model.${bean.Name}">
+]]>
+<!--  End Search commands  -->
+
+<!--  Data output  -->
+<row>
+    <column><![CDATA[
+#if($util.arrLen($bean.PrimaryKey.Column) == 1)
+	#if($build.UrlPattern == "*.do")
+		#foreach($pk in $bean.PrimaryKey.Column)
+		        <html:link href="${bean.Name}/edit.do" paramId="${pk.Name}" paramName="$util.firstLower($bean.Name)" paramProperty="${pk.Name}"><bean:message key="label.edit"/></html:link>&nbsp;
+		        <html:link href="${bean.Name}/view.do" paramId="${pk.Name}" paramName="$util.firstLower($bean.Name)" paramProperty="${pk.Name}"><bean:message key="label.view"/></html:link>&nbsp;
+		        <html:link href="${bean.Name}/remove.do" paramId="${pk.Name}" paramName="$util.firstLower($bean.Name)" paramProperty="${pk.Name}"><bean:message key="label.remove"/></html:link>
+		#end
+	#else
+		#foreach($pk in $bean.PrimaryKey.Column)
+		        <html:link href="do/${bean.Name}/edit" paramId="${pk.Name}" paramName="$util.firstLower($bean.Name)" paramProperty="${pk.Name}"><bean:message key="label.edit"/></html:link>&nbsp;
+		        <html:link href="do/${bean.Name}/view" paramId="${pk.Name}" paramName="$util.firstLower($bean.Name)" paramProperty="${pk.Name}"><bean:message key="label.view"/></html:link>&nbsp;
+		        <html:link href="do/${bean.Name}/remove" paramId="${pk.Name}" paramName="$util.firstLower($bean.Name)" paramProperty="${pk.Name}"><bean:message key="label.remove"/></html:link>
+		#end
+	#end
+#else
+	<%
+	java.util.HashMap map = new java.util.HashMap();
+	#foreach($pk in $bean.PrimaryKey.Column)
+		map.put("$pk.Name", String.valueOf(${util.firstLower($bean.Name)}.get${util.firstUpper($pk.Name)}()));
+	#end
+	pageContext.setAttribute("map", map, PageContext.PAGE_SCOPE);
+	%>
+	#if($build.UrlPattern == "*.do")
+	        <html:link href="${bean.Name}/edit.do" name="map" scope="page"><bean:message key="label.edit"/></html:link>&nbsp;
+	        <html:link href="${bean.Name}/view.do" name="map" scope="page"><bean:message key="label.view"/></html:link>&nbsp;
+	        <html:link href="${bean.Name}/remove.do" name="map" scope="page"><bean:message key="label.remove"/></html:link>
+	#else
+	        <html:link href="do/${bean.Name}/edit" name="map" scope="page"><bean:message key="label.edit"/></html:link>&nbsp;
+	        <html:link href="do/${bean.Name}/view" name="map" scope="page"><bean:message key="label.view"/></html:link>&nbsp;
+	        <html:link href="do/${bean.Name}/remove" name="map" scope="page"><bean:message key="label.remove"/></html:link>
+	#end
+#end
+    ]]>
+    </column>
+	
+	
+
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+
+<![CDATA[	
+<%
+ if (b$field.Name)
+ {
+ #set($params="")
+#if (($field.Type == "date") || ($field.Type == "timestamp"))
+	#set($params="yyyy-MMM-dd")
+#end
+ 
+%>]]>	
+#if($util.isNumberType($field.Type) && !$field.Value)
+	#set($alignment="right")
+#else
+	#set($alignment="left")
+#end    
+<column><![CDATA[
+#if($field.Type == "password")
+                    ******
+#elseif($field.Format)
+                    <bean:write name="$util.firstLower($bean.Name)" formatKey="${bean.Name}.${field.Name}.format" property="$field.Name" scope="page"/>
+#elseif($field.Value)
+	#if($field.Value.GlobalValueRef)
+	                    <% key = "${field.Value.GlobalValueRef}."+${util.firstLower(${bean.Name})}.get${util.firstUpper($field.Name)}();%>
+	                    <bean:message key="<%=key%>"/>
+	#else
+	                    <% key = "${bean.Name}.${field.Name}."+${util.firstLower(${bean.Name})}.get${util.firstUpper($field.Name)}();%>
+	                    <bean:message key="<%=key%>"/>
+	#end
+#else
+                    <bean:write name="$util.firstLower($bean.Name)" property="${field.Name}" scope="page" format="$params"/>
+#end
+#if($field.SelectView)
+     #   ( <peps:selectviiew  name="${util.firstLower($bean.Name)}" property="$field.Name"  view_name="product" display="true" />)
+#end 
+]]>   </column> <![CDATA[	
+<%
+ }
+%>]]>	
+#end		
+</row>
+<![CDATA[
+              </logic:iterate>
+]]>
+   </table>
+</content>
+<!--  Java script opearation   -->
+<![CDATA[</html:form>]]>
+<![CDATA[
+ <SCRIPT LANGUAGE="JavaScript" type="text/javascript">
+  <!-- // Activate cloak
+   function  cleanSearch()
+   {
+    with (window.document.forms["$util.firstLower($bean.Name)Form"])
+
+      {
+        var ok=false;
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+		if ( elements["$field.Name"] )
+		{
+		    if (elements["$field.Name"].value!="")
+		    {  
+		    elements["$field.Name"].value="";
+		    ok=true;
+		    }
+		}
+		if ( elements["sort_$field.Name"] )
+		{
+		    elements["sort_$field.Name"].value="";
+		}
+		#if(($$field.Type == "date") || ($$field.Type == "timestamp") || $util.isNumberType($field.Type))
+		if ( elements["${field.Name}_cond"] ) 
+		{
+		    elements["${field.Name}_cond"].value="";
+		}
+		
+		#end 
+	
+	
+#end
+    if (ok)
+    {
+        window.location="$bean.Name/clear.do";
+        submit();
+        }
+      }
+   }
+   
+   function  setSearch()
+   {
+  
+    //   System.out.println("hsearch:"+hsearch);
+
+     var el;
+     with (window.document.forms["$util.firstLower($bean.Name)Form"])
+     {
+   <%
+    String WHERE_SEARCH_SAVE = "${bean.Name}_SEARCH_SAVE";
+   Map hsearch  ;
+   hsearch =  (HashMap)session.getAttribute(WHERE_SEARCH_SAVE);
+      System.out.println("hsearch:"+hsearch);
+     
+    if (hsearch != null)
+    {
+   %>
+      #foreach($field in $util.getAllColumnsPKFirst($bean))
+     <%
+       String ${field.Name}_st =(String)hsearch.get("$field.Name");
+       if (${field.Name}_st != null)
+       {
+	       if (!"".equals(${field.Name}_st) )
+	       {
+     %>  
+	    el=elements["$field.Name"];
+	    if ( el )
+	    {
+	        el.value="<%=${field.Name}_st  %>";
+	    }
+     <%
+            } //if ${field.Name}_st!=""
+       } // if ${field.Name}_st !=null
+     %>  
+       #end 
+	 <%
+     } // if hsearch
+	 %>  
+   } // with 
+   
+   }// setSearch()
+   setSearch();
+ -->
+</SCRIPT>	
+
+]]>
+
+</doc>
+

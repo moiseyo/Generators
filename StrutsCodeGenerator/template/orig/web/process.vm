@@ -1,0 +1,119 @@
+##
+##  Copyright(C) 2002 Javanovic Software (http://www.javanovic.com)
+##
+##  This library is free software; you can redistribute it and/or
+##  modify it under the terms of the GNU Lesser General Public
+##  License as published by the Free Software Foundation; either
+##  version 2.1 of the License, or (at your option) any later version.
+##
+##  This library is distributed in the hope that it will be useful,
+##  but WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+##  Lesser General Public License for more details.
+##
+##  You should have received a copy of the GNU Lesser General Public
+##  License along with this library; if not, write to the Free Software
+##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+##
+<doc>
+<![CDATA[
+<%@ taglib uri="/WEB-INF/struts-html.tld" prefix="html" %>
+<%@ taglib uri="/WEB-INF/struts-bean.tld" prefix="bean" %>
+<%@ taglib uri="/WEB-INF/struts-logic.tld" prefix="logic" %>
+#if($bean.JavascriptValidation)
+<html:form method="post" action="$actionName"
+  onsubmit="return validate${beanName}Form(this);">
+<html:javascript formName="${util.firstLower($beanName)}Form"/>
+#else
+<html:form method="post" action="$actionName">
+#end
+#if($pageNumber)
+<html:hidden property="page" value="$pageNumber"/>
+#end
+]]>
+  <content>
+    <header>$pageTitle</header>
+    <table>
+      <header/>
+#foreach($col in $pageFields)
+      <row>
+        <title><![CDATA[<bean:message key="${beanName}.${col.Name}"/>]]></title>
+        <value><![CDATA[$util.strutsField($col, $beanName)]]></value>
+      </row>
+#end
+    <footer>
+      <![CDATA[
+              <logic:messagesPresent>
+                <bean:message key="errors.header"/>
+                <ul>
+                  <html:messages id="error">
+                    <li>
+                      <bean:write name="error"/>
+                    </li>
+                  </html:messages>
+                </ul>
+                <hr/>
+              </logic:messagesPresent>
+      ]]>
+    </footer>
+  </table>
+  <footer>
+    <![CDATA[
+#if($bean.JavascriptValidation)
+set($onclickfalse=" onclick="bCancel=false;")
+set($onclicktrue=" onclick="bCancel=true;")
+#end
+#if($backPath)
+                    <html:submit property="strutsButton"$!onclickfalse>
+                       <bean:message key="label.back"/>
+                    </html:submit>
+                    &nbsp;&nbsp;
+#end
+#if($continuePath)
+                    <html:submit property="strutsButton"$!onclickfalse>
+                       <bean:message key="label.continue"/>
+                    </html:submit>
+                    &nbsp;&nbsp;
+#end
+#if($singlePage)
+#foreach($forward in $forwards)
+                    <html:submit property="strutsButton"$!onclicktrue>
+                       <bean:message key="label.${process.Name}.${forward.Name}"/>
+                    </html:submit>
+                    &nbsp;&nbsp;
+#end
+#else
+#foreach($forward in $forwards)
+                    <html:submit property="strutsButton"$!onclicktrue>
+                       <bean:message key="label.${processName}${pageNumber}.${forward.Name}"/>
+                    </html:submit>
+                    &nbsp;&nbsp;
+#end
+#end
+#if($isQuery)
+                    <html:submit property="strutsButton"$!onclickfalse>
+                       <bean:message key="label.query"/>
+                    </html:submit>
+                    &nbsp;&nbsp;
+#else
+#if($successPath)
+                    <html:submit property="strutsButton"$!onclickfalse>
+                       <bean:message key="label.finish"/>
+                    </html:submit>
+                    &nbsp;&nbsp;
+#end
+#end
+#if($cancelPath)
+                    <html:cancel$!onclicktrue>
+                       <bean:message key="label.cancel"/>
+                    </html:cancel>
+                    &nbsp;&nbsp;
+#end
+    ]]>
+  </footer>
+  </content>
+<![CDATA[
+</html:form>
+]]>
+</doc>
+

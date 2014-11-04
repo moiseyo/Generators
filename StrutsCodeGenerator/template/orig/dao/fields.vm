@@ -1,0 +1,52 @@
+/---------------------------------------------------------
+//#############################
+// Application: $property.Name
+// Author     : $property.Author
+// File       : ${bean.Name}DAO.java
+//
+// Copyright $year $property.Company
+// Created at $date.Time
+// Visit http://peps
+//---------------------------------------------------------
+package neps.dao;
+
+import java.util.*;
+
+
+public class ${bean.Name}Fields
+{
+	static  ArrayList fields = new ArrayList(6);
+	
+	 
+	 static 
+	 {
+	 
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+       	fields.add("$field.Name");
+#end 
+	 
+	 }
+    /**
+     * 
+     */
+    public ${bean.Name}Fields()
+    {
+        super();
+    }
+    /**
+     * @return
+     */
+    public static ArrayList getFields()
+    {
+        return fields;
+    }
+
+    /**
+     * @param list
+     */
+    public static void setFields(ArrayList list)
+    {
+        fields = list;
+    }
+
+}

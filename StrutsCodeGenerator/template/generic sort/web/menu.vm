@@ -1,0 +1,57 @@
+##
+##  Copyright(C) 2006 Strint 
+##
+##  This library is free software; you can redistribute it and/or
+##  modify it under the terms of the GNU Lesser General Public
+##  License as published by the Free Software Foundation; either
+##  version 2.1 of the License, or (at your option) any later version.
+##
+##  This library is distributed in the hope that it will be useful,
+##  but WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+##  Lesser General Public License for more details.
+##
+##  You should have received a copy of the GNU Lesser General Public
+##  License along with this library; if not, write to the Free Software
+##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+##
+<menu>
+<header>
+<![CDATA[
+<%@ taglib uri="/WEB-INF/struts-html.tld" prefix="html"%>
+<%@ taglib uri="/WEB-INF/struts-logic.tld" prefix="logic"%>
+]]>
+</header>
+#foreach($item in $menu)
+  <item>
+#if($item.getRoleCount() > 0)
+<header>
+  <![CDATA[
+  <logic:present role="$formatter.formatArray($item.Role, ",")">
+  ]]>
+</header>
+#end
+    <title>$item.Title</title>
+#foreach($subitem in $item.MenuItem)
+    <link>
+      <![CDATA[<a href="<html:rewrite href="$subitem.Path"/>">$subitem.Title</a>]]>
+    </link>
+#end
+#if($item.getRoleCount() > 0)
+<footer>
+<![CDATA[
+</logic:present>
+]]>
+</footer>
+#end
+  </item>
+#end
+  <item>
+    <title/>
+#if($build.UrlPattern == "*.do")
+    <link><![CDATA[<a href="<html:rewrite href="logout.do"/>">Logout</a>]]></link>
+#else
+    <link><![CDATA[<a href="<html:rewrite href="do/logout"/>">Logout</a>]]></link>
+#end
+  </item>
+</menu>

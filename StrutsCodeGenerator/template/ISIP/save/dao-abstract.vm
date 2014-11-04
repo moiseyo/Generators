@@ -1,0 +1,193 @@
+##
+##  Copyright(C) 2002 Javanovic Software (http://www.javanovic.com)
+##
+##  This library is free software; you can redistribute it and/or
+##  modify it under the terms of the GNU Lesser General Public
+##  License as published by the Free Software Foundation; either
+##  version 2.1 of the License, or (at your option) any later version.
+##
+##  This library is distributed in the hope that it will be useful,
+##  but WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+##  Lesser General Public License for more details.
+##
+##  You should have received a copy of the GNU Lesser General Public
+##  License along with this library; if not, write to the Free Software
+##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+##
+//---------------------------------------------------------
+// Application: $property.Name
+// Author     : $property.Author
+// File       : DAO.java
+//
+// Copyright $year $property.Company
+// Created at $date.Time
+// 
+// Visit http://www.javanovic.com
+//---------------------------------------------------------
+
+package ${build.Package}.dao;
+
+import java.io.*;
+import java.sql.*;
+import java.util.*;
+import javax.sql.*;
+import java.text.*;
+
+import java.lang.IllegalAccessException;
+import java.lang.reflect.InvocationTargetException;
+
+import org.apache.commons.beanutils.BeanUtils;
+
+public class DAO {
+  private static String DATE_FORMAT = "${dateFormat}";
+  private static SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
+
+  protected DataSource ds;
+
+  protected void populate(Object bean, ResultSet rs) throws SQLException {
+    ResultSetMetaData metaData = rs.getMetaData();
+    int ncolumns = metaData.getColumnCount();
+
+    HashMap properties = new HashMap();
+    // Scroll to next record and pump into hashmap
+    for (int i=1; i<=ncolumns ; i++) {
+      properties.put(sql2javaName(metaData.getColumnName(i)), rs.getString(i));
+    }
+    // Set the corresponding properties of our bean
+    try {
+      BeanUtils.copyProperties(bean, properties);
+    } catch (InvocationTargetException ite) {
+      throw new SQLException("BeanUtils.populate threw " + ite.toString());
+    } catch (IllegalAccessException iae) {
+      throw new SQLException("BeanUtils.populate threw " + iae.toString());
+    }
+  }
+
+  public int getSize(String tableName, String condition) throws SQLException {
+##   Connection conn = null;
+##   PreparedStatement pstmt = null;
+##    ResultSet rs = null;
+##    try {
+##      String sql = "SELECT count(*) FROM "+tableName+" "+condition;
+##      conn = ds.getConnection();
+##      pstmt = conn.prepareStatement(sql);
+##      rs = pstmt.executeQuery();
+##      rs.next();
+##      int size = rs.getInt(1);
+##      close(rs);
+##      close(pstmt);
+##      return size;
+##    } catch (SQLException sqle) {
+##      close(rs);
+##      close(pstmt);
+##      rollback(conn);
+##      sqle.printStackTrace();
+##      throw sqle;
+##    } finally {
+##    	close(conn);
+##    }
+
+       ResultSet rs = null;
+        try
+        {
+            String sql = "SELECT count(*) FROM " + tableName + " " + condition;
+            pstmt.setStatement(sql);
+            rs = pstmt.executeQuery();
+            rs.next();
+            int size = rs.getInt(1);
+            close(rs);
+            pstmt.close();
+
+            return size;
+        }
+        catch (SQLException sqle)
+        {
+            close(rs);
+            sqle.printStackTrace();
+            throw sqle;
+        }
+        finally
+        {
+
+        }
+
+  }
+
+  public DAO(DataSource ds) {
+  	this.ds = ds;
+  }
+
+  public void setDataSource(DataSource ds) {
+    this.ds = ds;
+  }
+
+  protected void close(ResultSet rs) {
+    if (rs != null) {
+    	try {
+    		rs.close();
+    	} catch (SQLException e) {
+    	}
+    	rs = null;
+    }
+  }
+
+  protected void close(PreparedStatement pstmt) {
+    if (pstmt != null) {
+    	try {
+    		pstmt.close();
+    	} catch (SQLException e) {
+    	}
+    	pstmt = null;
+    }
+  }
+
+  protected void close(Connection conn) {
+    if (conn != null) {
+    	try {
+    		conn.close();
+    	} catch (SQLException e) {
+    		e.printStackTrace();
+    	}
+    	conn = null;
+    }
+  }
+
+  protected void rollback(Connection conn) {
+    if (conn != null) {
+    	try {
+    		conn.rollback();
+    	} catch (SQLException e) {
+    		e.printStackTrace();
+    	}
+    	conn = null;
+    }
+  }
+
+  protected static String java2sqlName(String name) {
+    String column = "";
+    for (int i = 0; i < name.length(); i++) {
+      if (i < name.length() - 1 && (name.charAt(i) >= 'a' && name.charAt(i) <= 'z') &&
+          (name.charAt(i + 1) >= 'A' && name.charAt(i + 1) <= 'Z')) {
+        column += name.charAt(i) + "_";
+      } else {
+        column += name.charAt(i);
+      }
+    }
+    return column.toLowerCase();
+  }
+
+  protected static String sql2javaName(String name) {
+    String column = "";
+    for (int i = 0; i < name.length(); i++) {
+      if (name.charAt(i) == '_') {
+        column += ++i<name.length()?String.valueOf(name.charAt(i)).toUpperCase():"";
+      } else {
+        column += name.charAt(i);
+      }
+    }
+    return column;
+  }
+
+
+}

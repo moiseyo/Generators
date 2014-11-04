@@ -1,0 +1,190 @@
+##
+##
+<doc><![CDATA[	<%@ Language=VBScript%>
+#parse ("template/asp/top.vm")
+
+<!-- End Sprint Header-->
+<%
+Dim mode
+dim bDebug
+bDebug = false
+bDebug = true
+dim cmd
+
+
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+Dim  $field.Name
+#end
+
+ mode = request("mode")
+
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+ $field.Name=request("$field.Name")
+#end
+
+const adChar = 129
+const adDecimal = 14
+const adParamInput = 1
+const adCmdText = 1
+const adNumeric = 131
+const adDouble = 5
+
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+const F_${field.Name} = "${field.Name}"
+#end
+
+%>
+
+<td>
+<div id="${bean.Name}1" style="position:absolute;  left:142px;">
+  <% RemoveData %>
+<P>
+
+<FORM name="thisForm" METHOD="post" ACTION ="${bean.Name}_summary.asp">
+<INPUT id=submit1 name=submit1 type=submit value="   OK    ">
+</P>
+</FORM>
+
+</body>
+</html>
+
+<%
+
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+ $field.Name=request("$field.Name")
+#end
+
+
+
+ if ( not( mode="remove" ) ) then
+ %>
+ <h1> Not valid mode </h1>
+
+ <%
+ Respose.end
+ end if
+
+
+
+Sub SetParametersDup( cmd)
+
+	dim num
+	num = 0
+#foreach($field iin $bean.PrimaryKey.Column)
+#if ( ${field.Type}=="string" )
+#set($type="adChar")
+#end
+#if ( ${field.Type}=="int" )
+#set($type="adNumeric")
+#end
+		 Call AddAsField( cmd ,num, F_${field.Name},${type},${field.Validation.MaxLength})
+#end
+
+
+
+End Sub
+
+
+Sub AddAsField( cmd, num, name , tp, l )
+  if tp = adChar then
+    cmd.Parameters.Append cmd.CreateParameter(name, tp, adParamInput, l, "0")
+  else
+		if  bDebug  then
+  	 Response.Write  name & ":" &  num     & "<BR>"
+		end if
+  	cmd.Parameters.Append cmd.CreateParameter(name, tp, adParamInput)', l,1)
+  end if
+  num = num + 1
+End Sub
+
+sub dumpParm( cmd)
+ dim i
+   if bDebug then
+    Response.Write " Count :"  & cmd.Parameters.count     & "<BR>"
+     for i =0 to  cmd.Parameters.count-1
+      Response.Write  cmd.Parameters(i).name & " : "  & cmd.Parameters(i).Value & " <BR> "
+      next
+			 Response.Write   cmd.CommandText & "<br>"
+
+   end if
+
+end sub
+
+ Sub RemoveData
+   dim sTmp, i,  sKey , k
+	 Dim rst
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+    Response.Write  "$field.Name   :" &    $field.Name     & "<BR>"
+#end
+
+#foreach($field in $bean.PrimaryKey.Column)
+   if Len($field.Name) <1  then
+    	Response.Write  "Error in '$field.Title' <BR>"
+    	exit sub
+   end if
+#end
+
+	set conn1 = getPdgConnection
+
+  SET cmd = Server.CreateObject("ADODB.Command")
+	set rst = Server.CreateObject( "ADODB.Recordset")
+  cmd.ActiveConnection =   conn1
+	tName  ="${bean.SqlName}"
+			 dim cmdDup
+       SET cmdDup = Server.CreateObject("ADODB.Command")
+       call SetParametersDup(cmd)
+		   sTmp = " delete from  $bean.SqlName where "
+				i=0
+				sKey=""
+#foreach($field in $bean.PrimaryKey.Column)
+			if i >0 then
+				sKey =Skey & " and "
+			end if
+			sKey =sKey & " $field.Name = ?"
+			i=i+1
+#end
+		sTmp=sTmp & sKey
+	  SetParametersDup( cmdDup)
+    cmdDup.CommandText = sTmp
+
+#foreach($field in $bean.PrimaryKey.Column)
+   cmdDup.Parameters(F_${field.Name} ) =   ${field.Name}
+#end
+
+ 	cmdDup.ActiveConnection =   conn1
+
+	 dumpParm cmdDup
+    cmdDup.Execute
+		'i=cInt(rst("CNT"))
+		k=i
+		if true then
+		i=0
+#foreach($field in $bean.PrimaryKey.Column)
+			if i >0 then
+				sKey =Skey & "and "
+			end if
+			sKey =sKey & "'" &   $field.Name  & "'"
+			i=i+1
+#end
+
+		%>
+				<h2>  <%=sKey %> Removed (<%=k%>) records </h2>
+		<%
+		end if
+		On error resume next
+		rst.close
+		set rst= Nothing
+    set cmdDup = Nothing
+		conn1.close
+
+
+
+end sub
+
+%>
+</div>
+#include("template/asp/buttom.vm")
+
+]]>
+</doc>
+

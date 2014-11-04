@@ -1,0 +1,131 @@
+##
+##  You should have received a copy of the GNU Lesser General Public
+##  License along with this library; if not, write to the Free Software
+##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+##
+#set($removeProc="removeItem")
+#set($removeAsp="${bean.Name}_remove.asp")
+<doc> <![CDATA[	<%@ Language=VBScript%>
+#parse ("template/asp/top.vm")
+
+	]]>
+<header>
+</header>
+<!-- End Sprint Header-->
+<![CDATA[
+	<%
+		set conn1 = getPdgConnection
+		set rs = Server.CreateObject("ADODB.Recordset")
+		
+	    sql = "Select count(*) CNT From ${bean.Name} "
+	    rs.Open sql, conn1, 2, 3
+	    cnt  =rs("CNT")
+	    rs.close
+
+		
+		sql = "Select * From ${bean.Name}  order by "
+		i=0
+#foreach($pk in $bean.PrimaryKey.Column)
+		 if i > 0 then
+		  sql = sql & ", "
+		 end if
+		 i=i+1
+     sql = sql +    "$pk.Name"
+#end
+
+		rs.Open sql, conn1, 2, 3
+ %>
+ ]]>
+
+ <![CDATA[
+<td>
+<div id="image1" style="position:absolute;  left:142px;">
+
+
+<h2> <%=C_${bean.Name}_BROWSER_TITLE %> <i> Total: <%=cnt%> users</i>  </h2>
+ <a href="${bean.Name}_entry.asp?mode=new"> New ${bean.Name} </a>
+  <table border>
+ 	<tr>
+	<th>
+	 Editor
+	</th>
+ ]]>
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+      <![CDATA[
+			<% if b_$field.Name  then %>
+			<th><%=escapeToHtml2(C_${field.Name})%></th>
+			<% end if %>
+			]]>
+#end
+ <![CDATA[
+
+ 	</tr>
+ <%
+ 		while not rs.EOF
+		sMap=""
+		i=0
+#foreach($pk in $bean.PrimaryKey.Column)
+		 if i > 0 then
+		  sMap = sMap & "&"
+		 end if
+	  	i=i+1
+     sMap = sMap +  "$pk.Name="  & Server.URLEncode(rs("$pk.Name"))
+#end
+
+	if ( sMap ="" ) then
+			Response.Write "<h2> No Primary key </h2>"
+			Response.end
+	end if
+ %>
+  <tr>
+  	<td>
+  		<a href="${bean.Name}_entry.asp?mode=edit&<%=sMap%>">Edit</a><br/>
+  		<a href="javascript:$removeProc('<%=sMap%>');">Remove</a>
+##  		<a href="${bean.Name}_view.asp?mode=view&&<%=sMap%>">View</a><br>
+  	</td>
+ #foreach($field in $util.getAllColumnsPKFirst($bean))
+		<% if b_$field.Name  then %>
+
+    	<td> <%=escapeToHtml2(rs("$field.Name"))%>  </td>
+		<% end if %>
+ #end
+ 	</tr>
+ <%
+ 		rs.Movenext
+ 		wend
+ %>
+  </table>
+ ]]>
+
+<![CDATA[
+<%
+	rs.close
+	conn1.Close
+%>
+]]>
+
+
+<![CDATA[
+
+
+</div>
+<SCRIPT LANGUAGE="JavaScript" type="text/javascript">
+	<!-- // Activate cloak
+	function $removeProc( sMap )
+	/*****************************************************************
+																2/1/2006 8:15AM
+	*****************************************************************/
+	{
+
+		if ( confirm('Do you what to remove  this item') ) {
+			 window.location="$removeAsp?mode=remove&" +sMap;
+		}
+
+	}  // removit
+	// Deactivate cloak -->
+</SCRIPT>
+
+
+ ]]>
+
+</doc>

@@ -1,0 +1,180 @@
+##
+##  Copyright(C) 2002 Javanovic Software (http://www.javanovic.com)
+##
+##  This library is free software; you can redistribute it and/or
+##  modify it under the terms of the GNU Lesser General Public
+##  License as published by the Free Software Foundation; either
+##  version 2.1 of the License, or (at your option) any later version.
+##
+##  This library is distributed in the hope that it will be useful,
+##  but WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+##  Lesser General Public License for more details.
+##
+##  You should have received a copy of the GNU Lesser General Public
+##  License along with this library; if not, write to the Free Software
+##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+##
+<doc>
+<![CDATA[
+<%@ include file="/common/taglibs.jsp" %>
+<jsp:useBean id="optionsValues" class="com.sprint.peps.taglibs.OptionsForm" scope="session"/>
+<jsp:setProperty  name ="optionsValues"  property="debug" value="true"/>
+<jsp:setProperty  name ="optionsValues"  property="all" value="%"/>
+##<%@ taglib uri="/WEB-INF/struts-html.tld" prefix="html" %>
+##<%@ taglib uri="/WEB-INF/struts-bean.tld" prefix="bean" %>
+##<%@ taglib uri="/WEB-INF/struts-logic.tld" prefix="logic" %>
+##<%@ taglib uri="/WEB-INF/jstl-core.tld" prefix="c" %>
+<%@include file="/security/test_credits.jsp"%>
+#set($s = '$')
+#set($ob = '{')
+#set($cb = '}')
+#if($bean.JavascriptValidation)
+<html:form method="post" action="/${bean.Name}/save"
+  onsubmit="return validate${bean.Name}Form(this);">
+#else
+<html:form method="post" action="/${bean.Name}/save">
+#end
+<html:hidden property="strutsAction"/>
+]]>
+  <content>
+  <header>
+    <![CDATA[
+    <c:choose>
+      <c:when test="${s}${ob}requestScope['${util.firstLower($bean.Name)}Form'].map.strutsAction == 1${cb}">
+        <bean:message key="label.add"/>
+      </c:when>
+      <c:otherwise>
+        <bean:message key="label.edit"/>
+      </c:otherwise>
+    </c:choose>
+    &nbsp;$bean.Name
+    ]]>
+  </header>
+  <table>
+    <header/>
+    <![CDATA[<c:choose>
+      <c:when test="${s}${ob}requestScope['${util.firstLower($bean.Name)}Form'].map.strutsAction == 1${cb}">]]>
+#foreach($pk in $bean.PrimaryKey.Column)
+#if($pk.Type != "auto")
+    <row>
+      <title><![CDATA[<bean:message key="${bean.Name}.${pk.Name}"/>]]></title>
+      <value><![CDATA[$util.strutsField($pk, $bean.Name)]]></value>
+    </row>
+#end
+#end
+    <![CDATA[</c:when>]]>
+    <![CDATA[<c:otherwise>]]>
+    #set( $cnt = 0 )  
+    
+#foreach($pk in $bean.PrimaryKey.Column)
+    <![CDATA[<html:hidden property="$pk.Name"/>]]>
+    <row>
+      <title><![CDATA[<bean:message key="${bean.Name}.${pk.Name}"/>]]></title>
+      <value>
+     #if (($pk.Type == "date") || ($pk.Type == "timestamp"))
+     	#set($cnt = $cnt + 1)
+     	<![CDATA[
+           <html:text property="${pk.name}" size="15" onclick="javascript:cal${cnt}.popup();"/>
+          <a href="javascript:cal1.popup();"><img src="<%=base%>/images/cal.gif" width="16" height="16" border="0" alt="Click Here to Pick up the date"></a>
+          ]]>
+     	
+     #else 
+      <![CDATA[<bean:write name="${util.firstLower($bean.Name)}Form" property="$pk.Name"/>]]>
+     #end  
+     </value>
+    </row>
+#end
+    <![CDATA[</c:otherwise></c:choose>]]>
+#foreach($attr in $bean.Attribute.Column)
+    <row>
+      <title><![CDATA[<bean:message key="${bean.Name}.${attr.Name}"/>]]></title>
+     <value>
+       #set($max_size = $attr.getValidation().getMaxLength())
+
+     #if($attr.Name=="UPDATED_BY")
+     	 <![CDATA[   <appl:updatedby property = "UPDATED_BY" username="true"/>]]>
+     	
+     #elseif($attr.Name=="UPDATED_DT")
+         <![CDATA[     <appl:updatedby property = "UPDATED_DT" today="true"/> ]]>
+               	
+     #elseif (($attr.Type == "date") || ($attr.Type == "timestamp"))
+     	#set($cnt = $cnt + 1)
+     	 <![CDATA[
+           <html:text property="${attr.name}" size="15" readonly="true" onclick="javascript:cal${cnt}.popup();"/>
+          <a href="javascript:cal${cnt}.popup();"><img src="<%=base%>/images/cal.gif" width="16" height="16" border="0" alt="Click Here to Pick up the date"></a>
+          ]]>
+     	
+     #elseif( $max_size > 35)
+     	#set ( $rows_ = ($max_size/60 +1)) 
+         <![CDATA[ <!-- $max_size $rows_   -->        <html:textarea property="$attr.Name" cols="60" rows="$rows_"/>]]>
+     #else 
+      <![CDATA[$util.strutsField($attr, $bean.Name)]]>
+     #end 
+     </value>
+    </row>
+#end
+
+
+
+    <footer>
+      <![CDATA[
+              <logic:messagesPresent>
+                <bean:message key="errors.header"/>
+                <ul>
+                  <html:messages id="error">
+                    <li>
+                      <bean:write name="error"/>
+                    </li>
+                  </html:messages>
+                </ul>
+                <hr/>
+              </logic:messagesPresent>
+      ]]>
+    </footer>
+  </table>
+  <footer>
+#if($bean.JavascriptValidation)
+#set($onclickfalse=' onclick="bCancel=false;"')
+#set($onclicktrue=' onclick="bCancel=true;"')
+#end
+    <![CDATA[
+          <html:submit>
+            <bean:message key="label.save"/>
+          </html:submit>
+          <html:reset>
+            <bean:message key="label.reset"/>
+          </html:reset>
+          <html:cancel>
+            <bean:message key="label.cancel"/>
+          </html:cancel>
+
+       ]]>
+  </footer>
+  </content>
+  
+ <![CDATA[ 
+ <script language="JavaScript"  type="text/javascript">
+    ]]>
+  
+#set( $cnt = 0 )  
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+ #if (($field.Type == "date") || ($field.Type == "timestamp"))
+  #if($field.Name!="UPDATED_DT")
+        #set($cnt = $cnt + 1)
+	var cal${cnt} = new calendar2(document.forms['$util.firstLower($bean.Name)Form'].elements['${field.name}'],<![CDATA['<%=base%>']]>);
+	cal${cnt}.year_scroll = true;
+	cal${cnt}.time_comp = false;
+  #end
+ #end
+#end
+  
+  
+ <![CDATA[ 
+  </script>	  
+  ]]>
+<![CDATA[
+</html:form>
+]]>
+</doc>
+

@@ -1,0 +1,171 @@
+<doc><![CDATA[	<%@ Language=VBScript%>
+#parse ("template/asp/top.vm")
+
+<td>
+<div id="${bean.Name}1" style="position:absolute;  left:142px;">
+
+<form method="post" action="${bean.Name}_save.asp"
+  onsubmit="return validate${bean.Name}Form(this);">
+
+<%
+
+Dim mode
+dim bDebug
+bDebug = false
+'bDebug = true
+
+
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+    Dim  $field.Name
+#end
+ mode = request("mode")
+
+ if ( not( mode="edit" or mode="new" ) ) then
+ %>
+ <h1> Not valid mode </h1>
+
+ <%
+ Respose.end
+ end if
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+ $field.Name=request("$field.Name")
+#end
+
+if  mode = "edit"  then
+%>
+	<h2> Edit </h2>
+<%
+		set conn1 = getPdgConnection
+		set rs = Server.CreateObject("ADODB.Recordset")
+		dim sMap, i
+		 i=0
+#foreach($pk in $bean.PrimaryKey.Column)
+		 if i > 0 then
+		  sMap = sMap & " AND "
+		 end if
+		i=i+1
+     sMap = sMap +  "$pk.Name='" & $pk.Name & "'"
+#end
+
+		sql = "Select * From ${bean.SqlName}  Where " & sMap
+
+		rs.Open sql, conn1, 2, 3
+		if not rs.EOF  then
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+	$field.Name =rs("$field.Name")
+#end
+	 end if
+  rs.close
+else
+%>
+
+<h2> New </h2>
+<%
+end if
+
+if bDebug  then
+	Response.Write  "mode:'" & mode	  & "' <br/>"
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+	Response.Write  "$field.Name:'" & $field.Name  & "' <br/>"
+#end
+end if
+
+%>
+ <input TYPE="hidden" name="mode"  VALUE="<%=mode%>">
+
+<table BORDER="1">
+#foreach($pk in $bean.PrimaryKey.Column)
+<tr>
+
+      <td align='right'><u><%=escapeToHtml2(C_${pk.Name})%></u></td>
+			<td>
+<%
+	if ( mode="edit" ) then
+ %>
+ <input TYPE="hidden" name="$pk.Name"  VALUE="<%=$pk.Name%>">
+ <%=$pk.Name%>
+ <%
+  else
+ %>
+ <input TYPE="text"  size="$pk.Validation.MaxLength"   name="$pk.Name"  VALUE="<%=$pk.Name%>">
+ <%
+   end if
+ %>
+ </td>
+</tr>
+#end
+#foreach($attr in $bean.Attribute.Column)
+<% if b_${attr.Name}  then %>
+
+<TR>
+	<TD align='right'><b><%=escapeToHtml2(C_${attr.Name})%>:</b></TD>
+	<td>
+#if ($attr.Validation.MaxLength > 30)
+#set($theSize="30")
+#else
+#set($theSize="$attr.Validation.MaxLength")
+#end
+ 	<input TYPE="text"  maxlength="$attr.Validation.MaxLength" size="$theSize" name="$attr.Name"  VALUE="<%=$attr.Name%>">
+	</td>
+</TR>
+<% else %>
+ 	<input TYPE="hidden"  name="$attr.Name"  VALUE="<%=$attr.Name%>">
+<%end if %>
+
+#end
+	<td colspan="2" ALIGN="center">
+		<INPUT TYPE="submit" class="pdg_button" VALUE="Save">
+		<INPUT Type="Reset" class="pdg_button">
+	</td>
+</tr>
+</table>
+
+
+</form>
+</div>
+
+<SCRIPT LANGUAGE="JavaScript" type="text/javascript">
+	<!-- // Activate cloak
+	function validate${bean.Name}Form( theForm )
+	{
+
+#foreach($field in $bean.PrimaryKey.Column)
+
+		if ( theForm.${field.Name}.value.length < ($(field.Validation.MaxLength) /2)  ) {
+			 alert("${field.Name} is to short");
+			 theForm.${field.Name}.focus();
+			 return false;
+		}
+#end
+#foreach($field in $bean.Attribute.Column)
+
+ 		if ( theForm.${field.Name}.value.length> $field.Validation.MaxLength  ) {
+ 			 alert("${field.Name} is to  big");
+ 			 setElementError( theForm.${field.Name} );
+ 			 return false;
+ 		}
+
+#end
+
+#foreach($field in $bean.Attribute.Column)
+#if ($field.Validation.Required)
+
+ 		if ( theForm.${field.Name}.value.length< 1  ) {
+ 			 alert("${field.Name} is Required");
+ 			 setElementError( theForm.${field.Name} );
+ 			 return false;
+ 		}
+#end
+#end
+
+
+		return true;
+	}  // form_validate
+	-->
+</script>
+#include("template/asp/buttom.vm")
+<script language="javascript" type="text/javascript" src="../../js/utility.js"></script>
+
+]]>
+</doc>
+

@@ -1,0 +1,347 @@
+##
+##  Copyright(C) 2002 Javanovic Software (http://www.javanovic.com)
+##
+##  This library is free software; you can redistribute it and/or
+##  modify it under the terms of the GNU Lesser General Public
+##  License as published by the Free Software Foundation; either
+##  version 2.1 of the License, or (at your option) any later version. 
+##
+##  This library is distributed in the hope that it will be useful,
+##  but WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+##  Lesser General Public License for more details.
+##
+##  You should have received a copy of the GNU Lesser General Public
+##  License along with this library; if not, write to the Free Software
+##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+##
+//---------------------------------------------------------
+// Application: $property.Name
+// Author     : $property.Author
+// File       : ${bean.Name}DAO.java
+//
+
+//---------------------------------------------------------
+## SQL set
+#macro(sqlset $bean)$formatter.formatArray($util.sqlSet($bean), ", ")#end
+##
+##
+## SQL cond
+#macro(sqlcond $bean)$formatter.formatArray($util.sqlCond($bean), " AND ")#end
+##
+##
+## SQL var, used by INSERT operation
+#macro(sqlvar $bean)
+#foreach($column in $util.getAllColumnsNoAuto($bean))
+#if($velocityCount == 1)?#else, ?#end#end#end
+##
+##
+##SQL attribute list
+#macro(sqlAttrList $attrs)
+$formatter.formatArray($util.sqlNames($bean.Attribute.Column), ", ")#end
+##
+##
+##SQL Field name
+#macro(fieldName $col)
+#if($col.SqlName)${col.SqlName}#else$util.java2sqlName(${col.Name})#end#end
+##
+##
+##SQL Column Insert list
+#macro(sqlInsertColumnList $bean)
+#foreach($col in $util.getAllColumnsNoAuto($bean))
+#if($velocityCount == 1)#fieldName($col)#else, #fieldName($col)#end#end#end
+##
+##
+##SQL Column Insert list
+#macro(sqlColumnList $bean)
+#foreach($col in $util.getAllColumns($bean))
+#if($velocityCount == 1)#fieldName($col)#else, #fieldName($col)#end#end#end
+##
+##
+##Primary Key paramater
+#macro(pkparam $bean)
+$formatter.formatArray($util.primaryKeyList($bean), ", ")#end
+##
+##
+##Primary Key param list
+#macro(pkvarlist $bean)
+#foreach($pk in $bean.PrimaryKey.Column)
+#if($velocityCount == 1)String.valueOf(${pk.Name})#else, String.valueOf(${pk.Name})#end#end#end
+##
+##
+## Populate
+#macro(populate $bean)
+populate($util.firstLower($bean.Name), rs);
+#foreach($col in $util.getAllColumns($bean))
+#if(${col.SqlName})
+        ${util.firstLower(${bean.Name})}.set${util.firstUpper(${col.Name})}(rs.get${util.firstUpper(${util.javaType($col.Type)})}("$col.SqlName"));
+#elseif(${col.Type} == "date")
+        ${util.firstLower(${bean.Name})}.set${util.firstUpper(${col.Name})}(rs.get${util.firstUpper(${util.javaType($col.Type)})}("${util.java2sqlName($col.Name)}"));
+#end
+#end#end
+
+package ${build.Package}.dao;
+
+import net.sf.hibernate.cfg.Configuration;
+import net.sf.hibernate.ObjectNotFoundException;
+import net.sf.hibernate.Session;
+import net.sf.hibernate.SessionFactory;
+
+import ${build.Package}.model.*;
+import ${build.Package}.util.CacheManager;
+
+public class ${bean.Name}HIB extends DAO {
+  private SessionFactory mSessionFactory;
+   
+  public ${bean.Name}HIB(DataSource ds) {
+     Configuration config = new Configuration();
+            config.addClass($bean.Name ${util.firstLower($bean.Name)}.class);
+            mSessionFactory = config.buildSessionFactory();
+           // mSupport = new ManagerSupport(mSessionFactory);  
+  }
+
+  public void insert($bean.Name ${util.firstLower($bean.Name)}) throws SQLException {
+    
+    
+     try {
+            session = mSessionFactory.openSession();
+            session.save(in$bean.Name ${util.firstLower($bean.Name)});
+            session.flush();
+            session.close();
+        } catch (Exception e) {
+            log.error("Error while creating $bean.Name ${util.firstLower($bean.Name)} | postId:", e);
+            throw new Exception(e);
+        }
+
+  }
+
+#if($bean.Attribute)
+  public void update($bean.Name ${util.firstLower($bean.Name)}) throws SQLException {
+  	Session ses = null;
+        Transaction tx = null;
+        try
+        {
+            ses = mSessionFactory.openSession(); 
+            tx = ses.beginTransaction();
+            ses.saveOrUpdate($bean.Name ${util.firstLower($bean.Name)});
+            ses.flush();
+            
+            tx.commit();
+        }
+#else
+  public void update($bean.Name ${util.firstLower($bean.Name)}) throws SQLException {
+    // do nothing
+  }
+#end
+
+  public void delete($bean.Name ${util.firstLower($bean.Name)}) throws SQLException {
+  	 try {
+            session = sf.openSession();
+            session.delete(${util.firstLower($bean.Name)});
+            session.flush();
+            session.close();
+        } catch (Exception e) {
+            log.error("Error while deleting post| postId:" + postId, e);
+            throw new ServiceException(e);
+        }
+
+  }
+
+#if($bean.Attribute)
+  public $bean.Name retrieve(#pkparam($bean)) throws SQLException {
+#if($bean.hasCacheMtl())
+    String[] objKeys = {"${bean.Name}", #pkvarlist($bean)};
+    String objKey = CacheManager.createKey(objKeys);
+    $bean.Name $util.firstLower($bean.Name) = ($bean.Name) DAOCacheManager.getCache(objKey);
+    if ($util.firstLower($bean.Name) != null)
+      return $util.firstLower($bean.Name);
+#else
+    $bean.Name $util.firstLower($bean.Name) = null;
+#end
+    Connection conn = null;
+    PreparedStatement pstmt = null;
+    ResultSet rs = null;
+    try {
+      conn = ds.getConnection();
+      String sql = "SELECT #sqlColumnList($bean) FROM #tableName($bean) WHERE #sqlcond($bean)";
+      pstmt = conn.prepareStatement(sql);
+#foreach($pk in $bean.PrimaryKey.Column)
+      pstmt.set$util.firstUpper($util.javaType($pk.Type))($velocityCount, $pk.Name);
+#end
+      rs = pstmt.executeQuery();
+      if (rs.next()) {
+        $util.firstLower($bean.Name) = new ${bean.Name}();
+        #populate($bean)
+      }
+      close(rs);
+      close(pstmt);
+    } catch (SQLException e) {
+      close(rs);
+      close(pstmt);
+      rollback(conn);
+      e.printStackTrace();
+    } finally {
+    	close(conn);
+    }
+#if($bean.hasCacheMtl())
+    DAOCacheManager.putCache($util.firstLower($bean.Name), objKey, ${bean.CacheMtl});
+#end
+    return $util.firstLower($bean.Name);
+  }
+#else
+  public $bean.Name retrieve(#pkparam($bean)) throws SQLException {
+    $bean.Name $util.firstLower($bean.Name) = null;
+    $util.firstLower($bean.Name) = new ${bean.Name}();
+#foreach($pk in $bean.PrimaryKey.Column)
+    ${util.firstLower($bean.Name)}.set$util.firstUpper($pk.Name)($pk.Name);
+#end
+    return $util.firstLower($bean.Name);
+  }
+#end
+
+  public List list() throws SQLException {
+#if($bean.hasCacheMtl())
+    String[] objKeys = {"${bean.Name}", "list"};
+    String objKey = CacheManager.createKey(objKeys);
+    ArrayList list = (ArrayList) DAOCacheManager.getCache(objKey);
+    if (list != null)
+      return list;
+    list = new ArrayList();
+#else
+    ArrayList list = new ArrayList();
+#end
+        List  ${util.firstLower($bean.Name)}s = null;
+
+        try {
+            session = sf.openSession();
+
+             ${util.firstLower($bean.Name)} = session.find(
+                    "from  ${util.firstLower($bean.Name)} in class net.eyde.personalblog.beans.$bean.Name ";
+
+            session.close();
+        } catch (Exception e) {
+            log.error("Error while reading posts", e);
+            //throw new ServiceException(e);
+        }
+
+        return posts;
+    }
+#if($bean.hasCacheMtl())
+    DAOCacheManager.putCache(list, objKey, $bean.CacheMtl);
+#end
+    return list;
+  }
+
+  public List list(int offset, int limit) throws SQLException {
+#if($bean.hasCacheMtl())
+    String[] objKeys = {"${bean.Name}", "list", String.valueOf(offset), String.valueOf(limit)};
+    String objKey = CacheManager.createKey(objKeys);
+    ArrayList list = (ArrayList) DAOCacheManager.getCache(objKey);
+    if (list != null)
+      return list;
+    list = new ArrayList();
+#else
+    ArrayList list = new ArrayList();
+#end
+    Connection conn = null;
+    PreparedStatement pstmt = null;
+    ResultSet rs = null;
+    try {
+      conn = ds.getConnection();
+      String sql = "SELECT #sqlColumnList($bean) FROM #tableName($bean)";
+      pstmt = conn.prepareStatement(sql);
+      rs = pstmt.executeQuery();
+      if(offset > 0) rs.absolute(offset);
+      int recCount = 0;
+      while((recCount++ < limit) && rs.next()) {
+        $bean.Name $util.firstLower($bean.Name) = new ${bean.Name}();
+        #populate($bean)
+        list.add($util.firstLower($bean.Name));
+      }
+      close(rs);
+      close(pstmt);
+    } catch (SQLException e) {
+      close(rs);
+      close(pstmt);
+      rollback(conn);
+      e.printStackTrace();
+    } finally {
+    	close(conn);
+    }
+#if($bean.hasCacheMtl())
+    DAOCacheManager.putCache(list, objKey, $bean.CacheMtl);
+#end
+    return list;
+  }
+
+## SQL var param list
+#macro(sqlvarparlist $cols)#foreach($col in $cols)
+#if($velocityCount == 1)$util.javaType($col.Type) $col.Name#else, $util.javaType($col.Type) $col.Name#end#end#end
+#macro(sqlvarlist $cols)#foreach($col in $cols)
+#if($velocityCount == 1)String.valueOf($col.Name)#else, String.valueOf($col.Name)#end#end#end
+#macro(querycond $conds)#foreach($cond in $conds)
+#if($velocityCount == 1) WHERE $util.java2sqlName($cond.FieldName) $cond.FieldCondition#else AND $util.java2sqlName($cond.FieldName) $cond.FieldCondition#end#end#end
+#macro(aggregatecond $conds)
+$formatter.formatArray($conds, " AND ")#end
+#macro(queryorder $orders)
+#foreach($order in $orders)
+#if($velocityCount == 1)$util.java2sqlName($order.FieldName) $!order.Order#else, $util.java2sqlName($order.FieldName) $!order.Order#end#end#end
+#foreach($query in $bean.Query)
+#set($sqlvarlist = $util.getQueryVariableColumnList($bean, $query))
+  public List ${query.Name}(int offset, int limit, #sqlvarparlist($sqlvarlist)) throws SQLException {
+#if($bean.hasCacheMtl())
+    String[] objKeys = {"${bean.Name}", "${query.Name}", String.valueOf(offset), String.valueOf(limit), #sqlvarlist($sqlvarlist)};
+    String objKey = CacheManager.createKey(objKeys);
+    ArrayList list = (ArrayList) DAOCacheManager.getCache(objKey);
+    if (list != null)
+      return list;
+    list = new ArrayList();
+#else
+    ArrayList list = new ArrayList();
+#end
+    Connection conn = null;
+    PreparedStatement pstmt = null;
+    ResultSet rs = null;
+    try {
+      conn = ds.getConnection();
+      String sql = "SELECT #sqlColumnList($bean) FROM #tableName($bean)"; 
+#if($sqlvarlist)
+      sql += "#querycond($query.Condition)";
+#end
+#if($util.arrLen($query.AggregateCondition) > 0)
+      sql += " HAVING #aggregatecond($query.AggregateCondition)";
+      sql += " GROUP BY #sqlColumnList($bean)";
+#end
+#if($util.arrLen($query.Sorting) > 0)
+      sql += " ORDER BY #queryorder($query.Sorting)";
+#end
+      pstmt = conn.prepareStatement(sql);
+#foreach($col in $sqlvarlist)
+      pstmt.set$util.firstUpper($util.javaType($col.Type))($velocityCount, $col.Name);
+#end
+      rs = pstmt.executeQuery();
+      if(offset > 0) rs.absolute(offset);
+      int recCount = 0;
+      while((recCount++ < limit) && rs.next()) {
+        $bean.Name $util.firstLower($bean.Name) = new ${bean.Name}();
+        #populate($bean)
+        list.add($util.firstLower($bean.Name));
+      }
+      close(rs);
+      close(pstmt);
+    } catch (SQLException e) {
+      close(rs);
+      close(pstmt);
+      rollback(conn);
+      e.printStackTrace();
+    } finally {
+    	close(conn);
+    }
+#if($bean.hasCacheMtl())
+    DAOCacheManager.putCache(list, objKey, $bean.CacheMtl);
+#end
+    return list;
+  }
+
+#end
+}

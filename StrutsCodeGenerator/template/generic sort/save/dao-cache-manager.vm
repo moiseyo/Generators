@@ -1,0 +1,59 @@
+##
+##  Copyright(C) 2002 Javanovic Software (http://www.javanovic.com)
+##
+##  This library is free software; you can redistribute it and/or
+##  modify it under the terms of the GNU Lesser General Public
+##  License as published by the Free Software Foundation; either
+##  version 2.1 of the License, or (at your option) any later version.
+##
+##  This library is distributed in the hope that it will be useful,
+##  but WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+##  Lesser General Public License for more details.
+##
+##  You should have received a copy of the GNU Lesser General Public
+##  License along with this library; if not, write to the Free Software
+##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+##
+//---------------------------------------------------------
+// Application: $property.Name
+// Author     : $property.Author
+// File       : DAOCacheManager.java
+//
+// Copyright $year $property.Company
+// Created at $date.Time
+// 
+// Visit http://www.javanovic.com
+//---------------------------------------------------------
+
+package ${build.Package}.dao;
+
+import java.util.*;
+import java.text.*;
+import org.apache.commons.logging.*;
+import ${build.Package}.util.*;
+
+public class DAOCacheManager {
+  private static Log log = LogFactory.getFactory().getInstance("DAOCacheManager");
+  private static CacheManager cacheManager = new CacheManager(CacheManager.MIX);
+
+  public static Object getCache(String identifier) {
+    if (log.isInfoEnabled()) {
+      Object[] o = {new Long(cacheManager.getHitCount()), new Long(cacheManager.getMissCount())};
+      log.info(MessageFormat.format(" [DAOCacheManager] getCache: {0} hits, {1} misses", o));
+    }
+    return cacheManager.getCache(identifier);
+  }
+
+  public static void putCache(Object object, String id, int minutesToLive) {
+    if (log.isInfoEnabled()) {
+      log.info(" [DAOCacheManager] putCache");
+    }
+    cacheManager.putCache(object, id, minutesToLive);
+  }
+
+  public static void invalidate(String id) {
+    cacheManager.invalidate(id);
+  }
+
+}

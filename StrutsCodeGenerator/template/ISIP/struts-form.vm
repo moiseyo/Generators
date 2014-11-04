@@ -1,0 +1,157 @@
+##
+##  Copyright(C) 2006 Sprint
+##
+##  This library is free software; you can redistribute it and/or
+##  modify it under the terms of the GNU Lesser General Public
+##  License as published by the Free Software Foundation; either
+##  version 2.1 of the License, or (at your option) any later version.
+##
+##  This library is distributed in the hope that it will be useful,
+##  but WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+##  Lesser General Public License for more details.
+##
+##  You should have received a copy of the GNU Lesser General Public
+##  License along with this library; if not, write to the Free Software
+##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+##
+//---------------------------------------------------------
+// Application: $property.Name
+// Author     : $property.Author
+// File       : ${bean.Name}Form.java
+//
+// Copyright $year $property.Company
+//
+// 
+//---------------------------------------------------------
+
+package ${build.Package}.controller;
+
+import org.apache.struts.action.*;
+import org.apache.struts.validator.*;
+
+import ${build.Package}.model.*;
+
+public class ${bean.Name}Form extends ValidatorForm {
+  public final static int ADD = 1;
+  public final static int EDIT = 2;
+  private int strutsAction;
+#if($bean.Process)
+  private String strutsButton = "";
+#end
+#set($columns = $util.getAllColumns($bean))
+#foreach ($column in $columns)
+#if($util.isDateType($column.Type))
+  private $util.initAttr($util.fqJavaType("string"), $column.Name);
+#else
+  private $util.initAttr($util.fqJavaType($column.Type), $column.Name);
+#end
+#if($column.Type == "password")
+  private $util.initAttr($util.javaType($column.Type), $column.Name.concat("2"));
+#end
+#if($column.Value)
+  private String ${column.Name}Display = ""; // Display Helper
+#end
+#end
+
+  public int getStrutsAction() {
+    return strutsAction;
+  }
+#if($bean.Process)
+  public String getStrutsButton() {
+    return strutsButton;
+  }
+#end
+#foreach ($column in $columns)#set($n = $column.Name)
+#if($util.isDateType($column.Type))
+  public String get$util.firstUpper($n)() {
+    return $n;
+  }
+#else
+  public $util.fqJavaType($column.Type) get$util.firstUpper($n)() {
+    return $n;
+  }
+#end
+#if($column.Type == "password")
+  public $util.javaType($column.Type) get$util.firstUpper($n)2() {
+    return ${n}2;
+  }
+#end
+#if($column.Value)
+  public String get${util.firstUpper($n)}Display() {
+    return ${n}Display;
+  }
+#end
+#end
+
+  public void setStrutsAction(int strutsAction) {
+    this.strutsAction = strutsAction;
+  }
+#if($bean.Process)
+  public void setStrutsButton(String strutsButton) {
+    this.strutsButton = strutsButton;
+  }
+#end
+#foreach ($column in $columns)#set($n = $column.Name)
+#if($util.isDateType($column.Type))
+  public void set$util.firstUpper($n)(String $n) {
+    this.$n = $n;
+  }
+#else
+  public void set$util.firstUpper($n)($util.fqJavaType($column.Type) $n) {
+    this.$n = $n;
+  }
+#end
+#if($column.Type == "password")
+  public void set$util.firstUpper($n)2($util.javaType($column.Type) ${n}2) {
+    this.${n}2 = ${n}2;
+  }
+#end
+#if($column.Value)
+  public void set${util.firstUpper($n)}Display(String ${n}Display) {
+    this.${n}Display = ${n}Display;
+  }
+#end
+#end
+
+#foreach($column in $columns)#if($column.Type == "password")
+#set($extendValidation=true)#end#end
+
+  /**
+   *  Clear all bean properties to their default state.  This method is
+   *  designed to be called once at the start of the process so that as
+   *  the user goes through the process all of the fields will be cleared.
+   *  The reset() method can not be used as it is invoked by Struts for
+   *  each action of the process.
+   */
+  public void clear() {
+    strutsAction = 0;
+#foreach ($column in $columns)
+#if($util.isDateType($column.Type))
+    $util.initValue($util.fqJavaType("string"), $column.Name);
+#else
+    $util.initValue($util.fqJavaType($column.Type), $column.Name);
+#end
+#if($column.Type == "password")
+    $util.initValue($util.javaType($column.Type), $column.Name.concat("2"));
+#end
+#if($column.Value)
+    ${column.Name}Display = "";
+#end
+#end
+  }
+
+#if($extendValidation)
+  public ActionErrors validate(ActionMapping mapping, javax.servlet.http.HttpServletRequest request) {
+    ActionErrors aes = super.validate(mapping, request);
+#foreach($column in $columns)
+#if($column.Type == "password")
+    if(!${column.Name}.equals(${column.Name}2)) {
+      aes.add("$column.Name", new ActionError("error.password", "$column.Name"));
+    }
+#end
+#end
+    return aes;
+  }
+#end
+}

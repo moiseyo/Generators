@@ -1,0 +1,102 @@
+##
+##   Copyright(C) 2006 Sprint
+##
+##  This library is free software; you can redistribute it and/or
+##  modify it under the terms of the GNU Lesser General Public
+##  License as published by the Free Software Foundation; either
+##  version 2.1 of the License, or (at your option) any later version.
+##
+##  This library is distributed in the hope that it will be useful,
+##  but WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+##  Lesser General Public License for more details.
+##
+##  You should have received a copy of the GNU Lesser General Public
+##  License along with this library; if not, write to the Free Software
+##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+##
+<!DOCTYPE tiles-definitions PUBLIC
+  "-//Apache Software Foundation//DTD Tiles Configuration//EN"
+  "http://jakarta.apache.org/struts/dtds/tiles-config.dtd">
+
+
+<tiles-definitions>
+  <definition name="doc.mainLayout" path="/template/classicLayout.jsp">
+    <put name="title"  value="Title"/>
+    <put name="header" value="/template/header.jsp"/>
+    <put name="menu"   value="/template/menu.jsp"/>
+    <put name="footer" value="/template/footer.jsp"/>
+    <put name="body"   value="/template/main.jsp"/>
+  </definition>
+
+  <definition name="error.page" extends="doc.mainLayout">
+    <put name="title"  value="Error"/>
+    <put name="body"   value="/failure.jsp"/>
+  </definition>
+#foreach ($bean in $beans)
+#if($bean.GenerateDao || $bean.GenerateProcess)
+  <!-- <<<<<<<<<<<<<< $bean.Name >>>>>>>>>>>>>>> -->
+#end
+#if($bean.GenerateDao)
+  <definition name="manager.${bean.Name}.entry" extends="doc.mainLayout">
+    <put name="title"  value="$bean.Name Entry"/>
+    <put name="body"   value="/manager/${bean.Name}/entry.jsp"/>
+  </definition>
+  <definition name="manager.${bean.Name}.summary" extends="doc.mainLayout">
+    <put name="title"  value="$bean.Name Summary"/>
+    <put name="body"   value="/manager/${bean.Name}/summary.jsp"/>
+  </definition>
+  <definition name="manager.${bean.Name}.view" extends="doc.mainLayout">
+    <put name="title"  value="View $bean.Name"/>
+    <put name="body"   value="/manager/${bean.Name}/view.jsp"/>
+  </definition>
+  <definition name="manager.${bean.Name}.remove" extends="doc.mainLayout">
+    <put name="title"  value="Remove $bean.Name"/>
+    <put name="body"   value="/manager/${bean.Name}/remove.jsp"/>
+  </definition>
+##    <definition name="manager.${bean.Name}.report" extends="doc.mainLayout">
+##    <put name="title"  value="Reports $bean.Name"/>
+##    <put name="body"   value="/manager/${bean.Name}/report.jsp"/>
+##  </definition>
+
+##  <definition name="query.${bean.Name}.SearchByPK" extends="doc.mainLayout">
+##    <put name="title"  value="SearchByPK"/>
+##    <put name="body"   value="/query/${bean.Name}/SearchByPK.jsp"/>
+##  </definition>
+#foreach($query in $bean.Query)
+#if($util.getQueryVariableColumnList($bean, $query))
+  <definition name="query.${bean.Name}.${query.Name}" extends="doc.mainLayout">
+    <put name="title"  value="${query.Name}"/>
+    <put name="body"   value="/query/${bean.Name}/${query.Name}.jsp"/>
+  </definition>
+#end
+#end
+#end
+#if($bean.GenerateProcess)
+#foreach($process in $bean.Process)
+#if($process.getPageCount() == 1)
+#foreach($page in $process.Page)
+  <definition name="process.${bean.Name}.${process.Name}" extends="doc.mainLayout">
+    <put name="title" value="$page.Title"/>
+    <put name="body" value="/process/${bean.Name}/${process.Name}.jsp"/>
+  </definition>
+#end
+#else
+#foreach($page in $process.Page)
+  <definition name="process.${bean.Name}.${process.Name}${velocityCount}" extends="doc.mainLayout">
+    <put name="title" value="$page.Title"/>
+    <put name="body" value="/process/${bean.Name}/${process.Name}${velocityCount}.jsp"/>
+  </definition>
+#end
+#end
+#if(!$process.SuccessPath)
+  <definition name="process.${bean.Name}.${process.Name}Finish" extends="doc.mainLayout">
+    <put name="title" value="${process.Name} Finish"/>
+    <put name="body" value="/process/${bean.Name}/${process.Name}Finish.jsp"/>
+  </definition>
+#end
+#end
+#end
+#end
+
+</tiles-definitions>

@@ -1,0 +1,136 @@
+##
+##   Copyright(C) 2006 Sprint
+##
+##  This library is free software; you can redistribute it and/or
+##  modify it under the terms of the GNU Lesser General Public
+##  License as published by the Free Software Foundation; either
+##  version 2.1 of the License, or (at your option) any later version.
+##
+##  This library is distributed in the hope that it will be useful,
+##  but WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+##  Lesser General Public License for more details.
+##
+##  You should have received a copy of the GNU Lesser General Public
+##  License along with this library; if not, write to the Free Software
+##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+##
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE web-app PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN" "http://java.sun.com/j2ee/dtds/web-app_2_3.dtd">
+
+
+<web-app>
+  <!-- filter -->
+#if($haveSessionVar)
+  <filter>
+    <filter-name>StartUp</filter-name>
+    <filter-class>${build.Package}.filter.StartUp</filter-class>
+  </filter>
+
+  <filter-mapping>
+    <filter-name>StartUp</filter-name>
+#if($build.UrlPattern == "*.do")
+    <url-pattern>/servlet/main.do</url-pattern>
+#else
+    <url-pattern>/do/main</url-pattern>
+#end
+  </filter-mapping>
+#end
+
+  <!-- server configuration -->
+  <servlet>
+    <servlet-name>action</servlet-name>
+    <servlet-class>org.apache.struts.action.ActionServlet</servlet-class>
+    <init-param>
+      <param-name>definitions-config</param-name>
+      <param-value>/WEB-INF/tiles-def.xml</param-value>
+    </init-param>
+    <init-param>
+      <param-name>config</param-name>
+      <param-value>/WEB-INF/struts-config.xml</param-value>
+    </init-param>
+    <init-param>
+      <param-name>debug</param-name>
+      <param-value>0</param-value>
+    </init-param>
+    <load-on-startup>0</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>action</servlet-name>
+#if($build.UrlPattern == "*.do")
+    <url-pattern>*.do</url-pattern>
+#else
+    <url-pattern>/do/*</url-pattern>
+#end
+  </servlet-mapping>
+  <taglib>
+    <taglib-uri>/WEB-INF/struts-bean.tld</taglib-uri>
+    <taglib-location>/WEB-INF/struts-bean.tld</taglib-location>
+  </taglib>
+  <taglib>
+    <taglib-uri>/WEB-INF/struts-form.tld</taglib-uri>
+    <taglib-location>/WEB-INF/struts-form.tld</taglib-location>
+  </taglib>
+  <taglib>
+    <taglib-uri>/WEB-INF/struts-logic.tld</taglib-uri>
+    <taglib-location>/WEB-INF/struts-logic.tld</taglib-location>
+  </taglib>
+  <taglib>
+    <taglib-uri>/WEB-INF/struts-template.tld</taglib-uri>
+    <taglib-location>/WEB-INF/struts-template.tld</taglib-location>
+  </taglib>
+  <taglib>
+    <taglib-uri>/WEB-INF/tiles.tld</taglib-uri>
+    <taglib-location>/WEB-INF/struts-tiles.tld</taglib-location>
+  </taglib>
+  <taglib>
+    <taglib-uri>/WEB-INF/jstl-core.tld</taglib-uri>
+    <taglib-location>/WEB-INF/c.tld</taglib-location>
+  </taglib>
+
+<!--
+  <resource-ref>
+    <res-ref-name>$database.Jndi</res-ref-name>
+    <res-type>javax.sql.DataSource</res-type>
+    <res-auth>Container</res-auth>
+  </resource-ref>
+-->
+
+#if($security)
+#foreach($const in $security.SecurityConstraint)
+  <security-constraint>
+    <web-resource-collection>
+      <web-resource-name>${const.Name}</web-resource-name>
+#foreach($url in $const.UrlPattern)
+      <url-pattern>$url</url-pattern>
+#end
+      <http-method>POST</http-method>
+      <http-method>GET</http-method>
+    </web-resource-collection>
+    <auth-constraint>
+#foreach($role in $const.SecurityRole)
+      <role-name>$role</role-name>
+#end
+    </auth-constraint>
+    <user-data-constraint>
+      <transport-guarantee>NONE</transport-guarantee>
+    </user-data-constraint>
+  </security-constraint>
+#end
+
+  <login-config>
+    <auth-method>FORM</auth-method>
+    <realm-name>default</realm-name>
+    <form-login-config>
+      <form-login-page>/login.jsp</form-login-page>
+      <form-error-page>/login-err.jsp</form-error-page>
+    </form-login-config>
+  </login-config>
+#foreach($role in $security.SecurityRole)
+  <security-role>
+    <role-name>$role</role-name>
+  </security-role>
+#end
+#end
+
+</web-app>

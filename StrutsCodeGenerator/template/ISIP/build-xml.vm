@@ -1,0 +1,167 @@
+##
+##
+##  This library is free software; you can redistribute it and/or
+##  modify it under the terms of the GNU Lesser General Public
+##  License as published by the Free Software Foundation; either
+##  version 2.1 of the License, or (at your option) any later version.
+##
+##  This library is distributed in the hope that it will be useful,
+##  but WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+##  Lesser General Public License for more details.
+##
+##  You should have received a copy of the GNU Lesser General Public
+##  License along with this library; if not, write to the Free Software
+##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+##
+<!-- ant build.xml for $property.Name application -->
+
+#set($basedir = '${basedir}')
+#set($docdir = '${doc.dir}')
+#set($libdir = '${lib.dir}')
+#set($distdir = '${dist.dir}')
+#set($builddir = '${build.dir}')
+#set($javahome = '${javahome}')
+#set($userhome = '${userhome}')
+#set($docapidir = '${doc.api.dir}')
+#set($javaclasspath = '${javaclasspath}')
+#set($srcdir = '${src.dir}')
+#set($webdir = '${web.dir}')
+#set($containerdir = '${container.dir}')
+
+
+
+<project name="strutscreator" default="compile" basedir=".">
+
+  <property name="name" value="$property.Name"/>
+  <property name="version" value="$property.Version"/>
+
+  <property name="build.dir" value="${basedir}/build"/>
+  <property name="bin.dir" value="${basedir}/bin"/>
+  <property name="src.dir" value="${basedir}/src"/>
+  <property name="doc.dir" value="${basedir}/doc"/>
+  <property name="doc.api.dir" value="${docdir}/api"/>
+  <property name="lib.dir" value="${basedir}/lib"/>
+  <property name="test.dir" value="${basedir}/test"/>
+  <property name="dist.dir" value="${basedir}/dist"/>
+  <property name="web.dir" value="${basedir}/webroot"/>
+  <property name="container.dir" value="$build.servletContainerDir"/>
+
+  <property name="build.compiler" value="$build.Compiler"/>
+
+  <path id="doc.path">
+    <fileset dir="${libdir}">
+      <include name="**/*.jar"/>
+    </fileset>
+    <pathelement location="."/>
+  </path>
+
+  <path id="build.path">
+    <fileset dir="${libdir}">
+      <include name="**/*.jar"/>
+    </fileset>
+    <fileset dir="${containerdir}">
+      <include name="**/*.jar"/>
+    </fileset>
+#foreach($lib in $build.LibraryPath)
+    <fileset dir="$lib">
+      <include name="**/*.jar"/>
+    </fileset>
+#end
+  </path>
+
+  <target name="init">
+  </target>
+
+  <target name="clean" depends="init">
+    <delete dir="${builddir}"/>
+    <delete dir="${distdir}"/>
+    <delete dir="${docapidir}"/>
+    <delete>
+      <fileset dir="." includes="**/*~"/>
+    </delete>
+  </target>
+
+  <target name="prepare" depends="init">
+    <echo message="build.compiler = ${build.compiler}"/>
+    <echo message="java.home = ${javahome}"/>
+    <echo message="user.home = ${userhome}"/>
+    <echo message="java.class.path = ${javaclasspath}"/>
+    <echo message=""/>
+    <mkdir dir="${builddir}"/>
+
+    <available property="jdk1.3+" classname="java.lang.StrictMath"/>
+  </target>
+
+  <target name="dep" depends="init">
+    <depend srcdir="${srcdir}" destdir="${builddir}" cache="${builddir}/depcache"
+      closure="yes"/>
+  </target>
+
+  <target name="doc" depends="init">
+
+    <delete dir="${docapidir}"/>
+    <mkdir dir="${docapidir}"/>
+    <javadoc packagenames="${build.Package}.*" sourcepath="${srcdir}" destdir="${docapidir}"
+       author="false" version="false" windowtitle="$property.Name" doctitle="$property.Name"
+       use="true" bottom="Copyright &#169; $year $property.Company">
+      <classpath refid="doc.path"/>
+      <link offline="true" href="http://java.sun.com/j2se/1.3/docs/api/" packagelistLoc="${javahome}/../docs/api"/>
+    </javadoc>
+  </target>
+
+  <target name="compile" depends="dep">
+    <javac srcdir="${srcdir}" destdir="${builddir}" deprecation="yes"
+       debug="yes" includes="**">
+       <classpath refid="build.path"/>
+    </javac>
+    <copy todir="${builddir}">
+      <fileset dir="${srcdir}">
+        <include name="**/*.properties"/>
+      </fileset>
+    </copy>
+  </target>
+
+  <target name="war" depends="compile">
+    <echo message="Description: Creating war."/>
+    <echo message=""/>
+    <mkdir dir="${distdir}"/>
+    <delete file="${distdir}/${build.WarFileName}"/>
+    <copy todir="${builddir}">
+      <fileset dir="${srcdir}">
+        <patternset>
+          <include name="*.properties"/>
+        </patternset>
+      </fileset>
+    </copy>
+
+    <war warfile="${distdir}/${build.WarFileName}" webxml="${webdir}/WEB-INF/web.xml">
+      <classes dir="${builddir}">
+        <patternset>
+         <include name="**/*"/>
+         <exclude name="depcache/**"/>
+        </patternset>
+      </classes>
+      <lib dir="${libdir}"/>
+      <fileset dir="${webdir}">
+        <patternset>
+          <exclude name="**/CVS/*"/>
+          <exclude name="**/WEB-INF/**"/>
+          <exclude name="**/_*/**"/>
+        </patternset>
+      </fileset>
+      <webinf dir="${webdir}/WEB-INF">
+        <patternset>
+          <include name="*.dtd"/>
+          <include name="*.tld"/>
+          <include name="*.xml"/>
+          <exclude name="web.xml"/>
+          <exclude name="**/CVS/*"/>
+        </patternset>
+      </webinf>
+    </war>
+    <copy file="${distdir}/${build.WarFileName}" todir="${containerdir}/webapps"/>
+  </target>
+
+
+</project>

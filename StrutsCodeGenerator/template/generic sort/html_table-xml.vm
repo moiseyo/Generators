@@ -1,0 +1,75 @@
+##
+##  Copyright(C) 2006 Sprint
+##
+##  This library is free software; you can redistribute it and/or
+##  modify it under the terms of the GNU Lesser General Public
+##  License as published by the Free Software Foundation; either
+##  version 2.1 of the License, or (at your option) any later version.
+##
+##  This library is distributed in the hope that it will be useful,
+##  but WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+##  Lesser General Public License for more details.
+##
+##  You should have received a copy of the GNU Lesser General Public
+##  License along with this library; if not, write to the Free Software
+##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+##
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE web-app PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN" "http://java.sun.com/j2ee/dtds/web-app_2_3.dtd">
+
+
+<?xml version="1.0"?>
+<htmltable xsi:schemaLocation="http://sourceforge.net/projects/htmltable html-table.xsd"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+  <tables>
+#foreach ($bean in $beans)
+    <!-- <<<<<<<<<<<<<< ${bean.Name} >>>>>>>>>>>>>>> -->
+       <table id="gui${bean.Name}" width="100%" border="1">
+      <columns useTH="true">
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+        <column id="c_${field.Name}">${field.Title}</column>
+#end
+     </columns>
+    </table>
+
+     <table id="gui${bean.Name}Functional" width="100%" border="1">
+       <area align="bottom">
+        <region align="left">
+          <tag type="com.zubarev.htmltable.taglib.TableNavigatorTag" htmltableAware="true"/>
+        </region>
+        <region align="right">
+          <tag type="com.zubarev.htmltable.taglib.TableInfoTag" htmltableAware="true"/>
+        </region>
+      </area>
+      <rows evenStyleClass="evenRow" oddStyleClass="oddRow" headerStyleClass="headerRow"/>
+      
+      <columns useTH="true">
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+        <column id="c_${field.Name}">${column.Title}</column>
+#end        
+        </columns>
+     
+    </columns>
+    </table>
+    
+     <table id="gui${bean.Name}Form" parent="gui${bean.Name}Functional">
+      <noContent styleClass="noItems">No items found</noContent>
+      <columns>
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+        <column id="c_${field.Name}">${column.Title}</column>
+#end        
+        </columns>
+     
+    </columns>
+    </table>
+    
+
+    
+    
+#end 
+  </tables>
+  
+  </htmltable>
+  

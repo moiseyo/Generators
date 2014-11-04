@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+
+<appl_menu>
+
+#foreach ($bean in $beans)
+ 
+ <ACTION NAME = "/${bean.Name}/list"/>
+ <ACTION NAME = "/${bean.Name}/edit"/>
+ <ACTION NAME = "/${bean.Name}/add"/>
+ <ACTION NAME = "/${bean.Name}/view"/>
+ <ACTION NAME = "/${bean.Name}/remove"/>
+ <ACTION NAME = "/${bean.Name}/save"/>
+ <ACTION NAME = "/${bean.Name}/trash"/>
+ <ACTION NAME = "/${bean.Name}/dup"/>
+ <ACTION NAME = "/${bean.Name}/clear"/>
+#end
+
+</appl_menu>

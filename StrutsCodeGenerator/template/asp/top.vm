@@ -1,0 +1,8 @@
+<%
+bNoLeftMenu= true
+%>
+
+<!--#Include file="../../user_test.inc"-->
+<!--#Include file="../../scripts/pdg_misc.asp"-->
+<!--#Include file="../../include/${bean.Name}_const.inc"-->
+<!--#Include file="../../includes/app_temp_top.inc"-->

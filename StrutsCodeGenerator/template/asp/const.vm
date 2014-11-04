@@ -1,0 +1,21 @@
+##
+##
+
+<doc>
+<![CDATA[
+<%
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+  const   C_$field.Name = "$field.Title"
+#end
+
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+  const   b_$field.Name = true
+#end
+
+const C_${bean.Name}_EDIT_TITLE="Editor"
+const C_${bean.Name}_BROWSER_TITLE="Browser"
+
+%>
+]]>
+</doc>
+

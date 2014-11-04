@@ -1,0 +1,291 @@
+##
+##  Copyright(C) 2002 Javanovic Software (http://www.javanovic.com)
+##
+##  This library is free software; you can redistribute it and/or
+##  modify it under the terms of the GNU Lesser General Public
+##  License as published by the Free Software Foundation; either
+##  version 2.1 of the License, or (at your option) any later version.
+##
+##  This library is distributed in the hope that it will be useful,
+##  but WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+##  Lesser General Public License for more details.
+##
+##  You should have received a copy of the GNU Lesser General Public
+##  License along with this library; if not, write to the Free Software
+##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+##
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE struts-config PUBLIC "-//Apache Software Foundation//DTD Struts Configuration 1.1//EN" "http://jakarta.apache.org/struts/dtds/struts-config_1_1.dtd">
+
+
+#macro(beanProperties $bean)
+      <form-property name="strutsAction" type="java.lang.String" initial=""/>
+      <form-property name="strutsButton" type="java.lang.String" initial=""/>
+#set($columns = $util.getAllColumns($bean))
+#foreach ($column in $columns)
+      $util.createDynaFormPropertyTag($column)
+#if($column.Value)
+      <form-property name="${column.Name}Display" type="java.lang.String" initial=""/> <!-- Display Helper -->
+#end
+#end
+#end
+
+<?xml version="1.0"?>
+
+<struts-config>
+
+    <!-- ============ DataSource Pool ============ -->
+    <data-sources>
+      <data-source>
+        <set-property property="autoCommit" value="false"/>
+        <set-property property="description" value="Database for $property.Name"/>
+        <set-property property="driverClass" value="$database.Driver"/>
+        <set-property property="maxCount" value="$database.MaximumConnections"/>
+        <set-property property="minCount" value="$database.MinimumConnections"/>
+        <set-property property="url" value="$database.Url"/>
+        <set-property property="user" value="$database.User"/>
+        <set-property property="password" value="$database.Password"/>
+      </data-source>
+    </data-sources>
+
+  <!-- ============ Form beans ============ -->
+  <form-beans>
+#foreach ($bean in $beans)
+#if($bean.GenerateDao || $bean.GenerateProcess)
+    <form-bean type="org.apache.struts.validator.DynaValidatorForm" name="${util.firstLower(${bean.Name})}Form">
+#beanProperties($bean)
+    </form-bean>
+#if($bean.GenerateProcess)
+#foreach($process in $bean.Process)
+    <form-bean type="org.apache.struts.validator.DynaValidatorForm" name="${util.firstLower(${bean.Name})}${process.Name}Form">
+#beanProperties($bean)
+    </form-bean>
+#end
+#end
+#end
+#end
+  </form-beans>
+
+   <!-- ========== Global Exception Definitions ============================== -->
+    <global-exceptions>
+        <exception
+            handler="org.apache.struts.action.ExceptionHandler"
+            key="global.error.invalidlogin"
+            path="/Errors/Login.do"
+            scope="session"
+            type="Exception" />
+        <exception
+            handler="java.lang.NullPointerException"
+            key="global.error.invalidlogin"
+            path="/logout.do"
+            scope="session"
+            type="Exception" />
+    </global-exceptions>
+
+
+
+  <!-- ============ Global forwards ============ -->
+  <global-forwards type="org.apache.struts.action.ActionForward">
+    <forward name="failure" path="error.page"/>
+    <forward name="success" path="/success.jsp"/>
+    <forward name="error" path="error.page"/>
+#if($build.UrlPattern == "*.do")
+    <forward name="cancel" redirect="true" path="/main.do"/>
+#else
+    <forward name="cancel" redirect="true" path="/do/main"/>
+#end
+  </global-forwards>
+
+
+  <!-- ============ Action Mapping definitions ============ -->
+  <action-mappings type="org.apache.struts.action.ActionMapping">
+  <!-- Static pages -->
+  <action path="/main" parameter="forward" type="${build.Package}.controller.DispatchForward">
+    <forward name="forward" path="doc.mainLayout"/>
+  </action>
+  <action path="/logout" type="${build.Package}.controller.Logout">
+    <forward name="success" path="/index.jsp"/>
+  </action>
+      <action
+            parameter="forward"
+            path="/Tools/misc/sql"
+            scope="session"
+            type="sprint.asp.controller.DispatchForward"
+            unknown="false"
+            validate="true">
+            <forward
+                name="forward"
+                path="tools.misc.sql"
+                redirect="false"
+                contextRelative="false" />
+        </action>
+
+        <action
+            path="/Tools/Session_dump"
+            scope="session"
+            type="sprint.asp.controller.Tools"
+            unknown="false"
+            validate="true">
+            <forward
+                name="success"
+                path="test.session_dump"
+                redirect="false"
+                />
+        </action>
+
+       
+#foreach ($bean in $beans)
+#if($bean.GenerateDao)
+##  <action path="/query/${bean.Name}/SearchByPK" parameter="forward" type="${build.Package}.controller.DispatchForward">
+##    <forward name="forward" path="query.${bean.Name}.SearchByPK"/>
+##  </action>
+#foreach($query in $bean.Query)
+##  <action path="/query/${bean.Name}/${query.Name}" parameter="forward" type="${build.Package}.controller.DispatchForward">##
+##    <forward name="forward" path="query.${bean.Name}.${query.Name}"/>
+##  </action>
+#end
+#end
+#end
+
+#foreach ($bean in $beans)
+    <!-- <<<<<<<<<<<<<< ${bean.Name} >>>>>>>>>>>>>>> -->
+#if($bean.GenerateDao)
+    <action path="/${bean.Name}/add" parameter="ADD" type="${build.Package}.controller.${bean.Name}Action"
+      scope="request" name="${util.firstLower(${bean.Name})}Form" validate="false">
+      <forward name="success" path="manager.${bean.Name}.entry"/>
+    </action>
+    <action path="/${bean.Name}/edit" parameter="EDIT" type="${build.Package}.controller.${bean.Name}Action"
+      scope="request" name="${util.firstLower(${bean.Name})}Form" validate="false">
+      <forward name="success" path="manager.${bean.Name}.entry"/>
+    </action>
+    <action path="/${bean.Name}/list" parameter="LIST" type="${build.Package}.controller.${bean.Name}Action"
+      scope="request" name="${util.firstLower(${bean.Name})}Form" validate="false">
+      <forward name="success" path="manager.${bean.Name}.summary"/>
+    </action>
+    <action path="/${bean.Name}/view" parameter="VIEW" type="${build.Package}.controller.${bean.Name}Action"
+      scope="request" name="${util.firstLower(${bean.Name})}Form" validate="false">
+      <forward name="success" path="manager.${bean.Name}.view"/>
+    </action>
+    <action path="/${bean.Name}/remove" parameter="REMOVE" type="${build.Package}.controller.${bean.Name}Action"
+      scope="request" name="${util.firstLower(${bean.Name})}Form" validate="false">
+      <forward name="success" path="manager.${bean.Name}.remove"/>
+    </action>
+##  <action path="/${bean.Name}/report" parameter="REPORT" type="${build.Package}.controller.${bean.Name}Action"
+##      scope="request" name="${util.firstLower(${bean.Name})}Form" validate="false">
+##      <forward name="success" path="manager.${bean.Name}.report"/>
+##    </action>
+
+#if($build.UrlPattern == "*.do")
+    <action path="/${bean.Name}/trash" parameter="TRASH" type="${build.Package}.controller.${bean.Name}Action"
+      scope="request" name="${util.firstLower(${bean.Name})}Form" validate="false">
+      <forward name="success" path="/${bean.Name}/list.do"/>
+    </action>
+    <action path="/${bean.Name}/save" parameter="SAVE" type="${build.Package}.controller.${bean.Name}Action"
+      scope="request" name="${util.firstLower(${bean.Name})}Form" validate="true" input="manager.${bean.Name}.entry">
+      <forward name="success" path="/${bean.Name}/list.do"/>
+      <forward name="cancel" redirect="true" path="/${bean.Name}/list.do"/>
+    </action>
+#else
+    <action path="/${bean.Name}/trash" parameter="TRASH" type="${build.Package}.controller.${bean.Name}Action"
+      scope="request" name="${util.firstLower(${bean.Name})}Form" validate="false">
+      <forward name="success" path="/do/${bean.Name}/list"/>
+    </action>
+    <action path="/${bean.Name}/save" parameter="SAVE" type="${build.Package}.controller.${bean.Name}Action"
+      scope="request" name="${util.firstLower(${bean.Name})}Form" validate="true" input="manager.${bean.Name}.entry">
+      <forward name="success" path="/do/${bean.Name}/list"/>
+      <forward name="cancel" redirect="true" path="/do/${bean.Name}/list"/>
+    </action>
+#end
+#foreach($query in $bean.Query)
+#if($build.UrlPattern == "*.do")
+#if($query.Result == "single")
+    <action path="/${bean.Name}/$query.Name" parameter="$query.Name.toUpperCase()" type="${build.Package}.controller.${bean.Name}Action"
+      scope="request" name="${util.firstLower(${bean.Name})}Form" validate="false">
+      <forward name="success" path="manager.${bean.Name}.view"/>
+      <forward name="cancel" redirect="true" path="/${bean.Name}/list.do"/>
+    </action>
+#else
+    <action path="/${bean.Name}/$query.Name" parameter="$query.Name.toUpperCase()" type="${build.Package}.controller.${bean.Name}Action"
+      scope="request" name="${util.firstLower(${bean.Name})}Form" validate="false">
+      <forward name="success" path="manager.${bean.Name}.summary"/>
+      <forward name="cancel" redirect="true" path="/${bean.Name}/list.do"/>
+    </action>
+#end
+#else
+#if($query.Result == "single")
+    <action path="/${bean.Name}/$query.Name" parameter="$query.Name.toUpperCase()" type="${build.Package}.controller.${bean.Name}Action"
+      scope="request" name="${util.firstLower(${bean.Name})}Form" validate="false">
+      <forward name="success" path="manager.${bean.Name}.view"/>
+      <forward name="cancel" redirect="true" path="/do/${bean.Name}/list"/>
+    </action>
+#else
+    <action path="/${bean.Name}/$query.Name" parameter="$query.Name.toUpperCase()" type="${build.Package}.controller.${bean.Name}Action"
+      scope="request" name="${util.firstLower(${bean.Name})}Form" validate="false">
+      <forward name="success" path="manager.${bean.Name}.summary"/>
+      <forward name="cancel" redirect="true" path="/do/${bean.Name}/list"/>
+    </action>
+#end
+#end
+#end
+#end
+#if($bean.GenerateProcess)
+#foreach($process in $bean.Process)
+    <action path="/${bean.Name}/$process.Name" parameter="$process.Name.toUpperCase()" type="${build.Package}.controller.${bean.Name}Action"
+      scope="session" name="${util.firstLower(${bean.Name})}${process.Name}Form" validate="false">
+      <forward name="success" path="process.${bean.Name}.${process.Name}1"/>
+    </action>
+#set($pageCount = $process.getPageCount())
+#foreach($page in $process.Page)
+#set($nextCount = $velocityCount+1)
+#set($prevCount = $velocityCount - 1)
+    <action path="/${bean.Name}/${process.Name}$velocityCount" parameter="${process.Name.toUpperCase()}$velocityCount" type="${build.Package}.controller.${bean.Name}Action"
+      scope="session" name="${util.firstLower(${bean.Name})}${process.Name}Form" input="process.${bean.Name}.${process.Name}$velocityCount" validate="true">
+#if($velocityCount < $pageCount)
+      <forward name="continue" path="process.${bean.Name}.${process.Name}$nextCount"/>
+#end
+#if($velocityCount > 1)
+      <forward name="back" path="process.${bean.Name}.${process.Name}$prevCount"/>
+#end
+#if($process.CancelPath)
+      <forward name="cancel" path="$process.CancelPath"/>
+#end
+#foreach($forward in $process.Forward)
+      <forward name="$forward.Name" path="$forward.Path"/>
+#end
+#if($velocityCount == $pageCount)
+#if($process.SuccessPath)
+      <forward name="success" path="$process.SuccessPath"/>
+#else
+      <forward name="success" path="process.${bean.Name}.${process.Name}Finish"/>
+#end
+#end
+    </action>
+#end
+#end
+#end
+#end
+  </action-mappings>
+
+  <controller processorClass="org.apache.struts.tiles.TilesRequestProcessor"/>
+
+  <!-- ========== Message Resources Definitions =========================== -->
+  <message-resources parameter="resources.application"/>
+
+  <!-- ========== Plug Ins Configuration ================================== -->
+  <!-- Add multiple validator resource files by setting the pathname property -->
+  <plug-in className="org.apache.struts.validator.ValidatorPlugIn">
+    <set-property property="pathnames" value="/WEB-INF/validator-rules.xml,/WEB-INF/validation.xml,/WEB-INF/password-rule.xml"/>
+  </plug-in>
+  <plug-in className="org.apache.struts.tiles.TilesPlugin" >
+    <set-property property="definitions-config" value="/WEB-INF/tiles-def.xml"/>
+    <set-property property="definitions-debug" value="0"/>
+    <set-property property="definitions-parser-details" value="0"/>
+    <set-property property="definitions-parser-validate" value="true"/>
+  </plug-in>
+
+#if($haveApplicationVar)
+  <plug-in className="${build.Package}.plugin.StartUp"/>
+ #end
+
+</struts-config>

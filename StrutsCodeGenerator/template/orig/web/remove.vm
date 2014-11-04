@@ -1,0 +1,69 @@
+##
+##  Copyright(C) 2002 Javanovic Software (http://www.javanovic.com)
+##
+##  This library is free software; you can redistribute it and/or
+##  modify it under the terms of the GNU Lesser General Public
+##  License as published by the Free Software Foundation; either
+##  version 2.1 of the License, or (at your option) any later version.
+##
+##  This library is distributed in the hope that it will be useful,
+##  but WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+##  Lesser General Public License for more details.
+##
+##  You should have received a copy of the GNU Lesser General Public
+##  License along with this library; if not, write to the Free Software
+##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+##
+<doc>
+<![CDATA[
+<%@ taglib uri="/WEB-INF/struts-html.tld" prefix="html" %>
+<%@ taglib uri="/WEB-INF/struts-bean.tld" prefix="bean" %>
+<%@include file="/security/test_credits.jsp"%>
+
+]]>
+  <content>
+    <header><![CDATA[&nbsp;&nbsp;Delete Confirmation]]>
+    </header>
+    <table>
+      <header/>
+<![CDATA[
+<logic:present name="${util.firstLower($bean.Name)}Form" scope="request">
+]]>
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+        <row>
+            <title><![CDATA[<bean:message key="${bean.Name}.${field.Name}"/>]]></title>
+            <value><![CDATA[
+#if($field.Type == "password")
+               ******
+#elseif($field.Format)
+              <bean:write name="${util.firstLower($bean.Name)}Form" formatKey="${bean.Name}.${field.Name}.format" property="$field.Name" scope="request"/>
+#elseif($field.Value)
+              <bean:message name="${util.firstLower($bean.Name)}Form" property="${field.Name}Display" scope="request"/>
+#else
+              <bean:write name="${util.firstLower($bean.Name)}Form" property="$field.Name" scope="request"/>
+#end
+            ]]>
+            </value>
+         </row>
+#end
+<![CDATA[
+</logic:present>
+]]>
+    </table>
+    <footer><![CDATA[<html:form method="POST" action="/${bean.Name}/trash">
+#foreach($pk in $bean.PrimaryKey.Column)
+        <input type="hidden" name="$pk.Name" value="<bean:write name="${util.firstLower($bean.Name)}Form" property="$pk.Name" scope="request"/>">
+#end
+                    <html:submit styleClass="menubutton"><bean:message key="label.remove"/></html:submit>
+                    &nbsp;&nbsp;
+                    <html:button styleClass="menubutton" property="button(clear)"  onclick="javascript:gobacktheform();">Cancel</html:button>
+##                    <html:cancel><bean:message key="label.cancel"/></html:cancel>
+            </html:form>
+      ]]>
+    </footer>
+  </content>
+</doc>
+
+
+

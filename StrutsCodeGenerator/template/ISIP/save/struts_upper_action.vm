@@ -1,0 +1,239 @@
+##
+##  Copyright(C) 2002 Javanovic Software (http://www.javanovic.com)
+##
+##  This library is free software; you can redistribute it and/or
+##  modify it under the terms of the GNU Lesser General Public
+##  License as published by the Free Software Foundation; either
+##  version 2.1 of the License, or (at your option) any later version.
+##
+##  This library is distributed in the hope that it will be useful,
+##  but WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+##  Lesser General Public License for more details.
+##
+##  You should have received a copy of the GNU Lesser General Public
+##  License along with this library; if not, write to the Free Software
+##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+##
+
+//---------------------------------------------------------
+// Application: $property.Name
+// Author     : $property.Author
+// File       : ${bean.Name}Action.java
+//
+// Copyright $year $property.Company
+// Created at $date.Time
+// 
+// Visit http://www.javanovic.com
+//  Revision  2.0.0.0   6/18/2004 1:03PM
+//---------------------------------------------------------
+##Primary Key list
+#macro(pklist $bean)
+#foreach($column in $bean.PrimaryKey.Column)
+#if($velocityCount == 1)$column.Name#else, $column.Name#end#end
+#end
+
+package ${build.Package}.controller;
+
+import javax.sql.*;
+import java.util.*;
+import javax.sql.*;
+import javax.servlet.http.*;
+import javax.servlet.*;
+import org.apache.struts.*;
+import org.apache.struts.validator.*;
+import org.apache.struts.action.*;
+import org.apache.struts.util.*;
+import ${build.Package}.model.*;
+import ${build.Package}.dao.*;
+import ${build.Package}.util.*;
+import ${build.Package}.*;
+import ${build.Package}.sql.*;
+import com.sprint.peps.sql.*;
+import com.sprint.peps.html.*;
+import com.sprint.peps.oracle.*;
+
+import org.apache.commons.logging.LogFactory;
+
+#foreach($column in $util.getAllColumnsNoAuto($bean))
+#if($column.Type == "date")#set($isDateFieldExist = true)#end#end
+#if($isDateFieldExist)
+import java.text.*;
+#end
+
+import javax.servlet.http.*;
+import javax.servlet.*;
+
+import org.apache.struts.*;
+import org.apache.struts.validator.*;
+import org.apache.struts.action.*;
+import org.apache.struts.util.*;
+
+import ${build.Package}.model.*;
+import ${build.Package}.dao.*;
+import ${build.Package}.util.*;
+
+/**
+ *  ${bean.Name}UpperAction subclass Extend basic  Action functionality .
+ */
+/**
+ * @author mgo4943
+ *
+ * To change the template for this generated type comment go to
+ * Window>Preferences>Java>Code Generation>Code and Comments
+ */
+public class UpperAction extends Action
+{
+    UserView                               user  = null;
+    private org.apache.commons.logging.Log __log = LogFactory.getFactory()
+                                                         .getInstance(this
+                                                                 .getClass());
+
+    static
+    {
+        Locale austLocale = new Locale("en", Locale.US.getCountry());
+        SqlDateLocaleConverter sqlDateConverter = new SqlDateLocaleConverter(null,
+                                                                             austLocale,
+                                                                             "dd-MM-yyyy");
+        sqlDateConverter.setLenient(false);
+        SqlTimestampLocaleConverter timestampConverter = new SqlTimestampLocaleConverter(null,
+                                                                                         austLocale,
+                                                                                         "dd-MM-yyyy");
+        timestampConverter.setLenient(false);
+
+        StringLocaleConverter stringConverter = new StringLocaleConverter(null,
+                                                                          austLocale,
+                                                                          "dd-MM-yyyy");
+
+        // Register the converters with ConvertUtils.
+        ConvertUtils.register(sqlDateConverter, java.sql.Date.class);
+        ConvertUtils.register(timestampConverter, java.sql.Timestamp.class);
+        //          ConvertUtils.register(dateConverter, java.util.Date.class);
+        ConvertUtils.register(stringConverter, String.class);
+    }
+
+    /**
+     *
+     */
+    public void preExequte(ActionMapping mapping,
+                           ActionForm actionForm,
+                           HttpServletRequest request,
+                           HttpServletResponse response) throws java.lang.Exception
+    {
+        String path = mapping.getPath();
+        request.setAttribute("actView", path);
+        if (__log.isInfoEnabled())
+        {
+            __log.info("path: '" + path + "'");
+        }
+        user = (UserView) request.getSession()
+                .getAttribute(IConstants.USER_VIEW_KEY);
+        if (path.equals("/main"))
+        {
+            request.getSession().setAttribute(IConstants.LOGIN_KEY, "Y");
+
+        }
+
+    }
+
+   
+#if ($bean.user)
+
+    String getRole()
+    {
+        if (user != null) return user.getRole();
+        return null;
+    }
+    
+    public UserView getUser()
+    {
+        return user;
+    }
+   
+#end 
+    void preSave(ActionMapping mapping,
+                 ActionForm actionForm,
+                 HttpServletRequest request,
+                 HttpServletResponse response)
+    {
+        DynaValidatorForm form = (DynaValidatorForm) actionForm;
+        UserView uUser = null;
+        HttpSession session = null;
+
+        session = request.getSession();
+        uUser = (UserView) session.getAttribute(IConstants.USER_VIEW_KEY);
+    }
+    /**
+     * @return Returns the user.
+     */
+    /**
+     * Geneterts current time stamp Method Description
+     * @return
+     */
+    Timestamp getcurrentTime()
+    {
+        Timestamp ts = new Timestamp((new java.util.Date()).getTime());
+        return ts;
+    }
+
+   String getDate()
+    {
+        SimpleDateFormat formatter1 = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+        java.util.Date currentTime_1 = new java.util.Date();
+        String datestr = formatter1.format(currentTime_1);
+        return datestr;
+    }
+
+    public Vector addSearch(HttpServletRequest request, String beanName)
+    {
+        STable tm = STableMap.getTableMap(beanName);
+        if (tm == null)
+            throw new NullPointerException("Cannot find valid  bien name ["
+                                           + beanName + "]");
+
+        HashMap hm = new HashMap();
+        Vector result = new Vector();
+        String firstInOrder = request.getParameter("firstInOrder");
+        String firstInOrderValue = request.getParameter("firstInOrderValue");
+
+        if ((firstInOrderValue != null) && (firstInOrder != null))
+        {
+            SField sf = tm.getSortField(firstInOrder);
+            if ( sf != null)
+            {
+            String so = sf.getName() + " " + firstInOrderValue;
+            result.add(so);
+             
+            hm.put(sf.getSortName(), firstInOrderValue);
+            }
+            else
+                firstInOrder = null;
+
+        }
+        for (Enumeration e = request.getParameterNames(); e.hasMoreElements();)
+        {
+            String se = (String) e.nextElement();
+            if (se.equals(firstInOrder)) continue;
+            String note = request.getParameter(se);
+            SField sf = tm.getSortField(se);
+            if (sf != null)
+            {
+                if ((note != null) && (note.length() > 2)) // Only DESC and ASC
+                {
+                    String so = sf.getName() + " " + note;
+                    result.add(so);
+                    hm.put(sf.getSortName(), note);
+                }
+            }
+        }
+
+        if (__log.isInfoEnabled())
+        {
+            __log.info("SearchResult: '" + result + "'");
+            __log.info("Hash set : " + hm);
+        }
+        request.setAttribute(IConstants.SORT_NODES_KEY, hm);
+        return result;
+    }
+
+}

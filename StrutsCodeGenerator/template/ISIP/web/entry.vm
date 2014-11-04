@@ -1,0 +1,296 @@
+<doc>
+<![CDATA[
+<%@ include file="/common/taglibs.jsp" %>
+##<jsp:useBean id="optionsValues" class="com.sprint.peps.taglibs.OptionsForm" scope="session"/>
+##<jsp:setProperty  name ="optionsValues"  property="debug" value="true"/>
+##<jsp:setProperty  name ="optionsValues"  property="all" value="%"/>
+##<%@ taglib uri="/WEB-INF/struts-html.tld" prefix="html" %>
+##<%@ taglib uri="/WEB-INF/struts-bean.tld" prefix="bean" %>
+##<%@ taglib uri="/WEB-INF/struts-logic.tld" prefix="logic" %>
+##<%@ taglib uri="/WEB-INF/jstl-core.tld" prefix="c" %>
+<%@include file="/security/test_credits.jsp"%>
+<%
+ org.apache.struts.validator.DynaValidatorForm ${util.firstLower($bean.Name)}Form = (org.apache.struts.validator.DynaValidatorForm)
+                                    request.getAttribute("${util.firstLower($bean.Name)}Form");
+boolean bDebug = true;
+bDebug = false;
+                                    
+%>  
+	
+#set($s = '$')
+#set($ob = '{')
+#set($cb = '}')
+#if($bean.JavascriptValidation)
+<html:form method="post" action="/${bean.Name}/save"
+  onsubmit="return validate${bean.Name}Form(this);">
+#else
+##<html:form method="post" action="/${bean.Name}/save">
+<html:form method="post" action="/${bean.Name}/save"
+  onsubmit="return validate${bean.Name}Form(this);">
+
+#end
+ #set( $cnt = 0 )
+<html:hidden property="strutsAction"/>
+]]>
+  <content>
+  <header>
+    <![CDATA[
+    <c:choose>
+      <c:when test="${s}${ob}requestScope['${util.firstLower($bean.Name)}Form'].map.strutsAction == 1${cb}">
+        <bean:message key="label.add"/>:
+      </c:when>
+      <c:otherwise>        <bean:message key="label.edit"/>:
+      </c:otherwise>
+    </c:choose>
+    &nbsp;<bean:message key="title${bean.Name}"/>
+    ]]>
+  </header>
+  <table>
+    <header/>
+    <![CDATA[<c:choose>
+      <c:when test="${s}${ob}requestScope['${util.firstLower($bean.Name)}Form'].map.strutsAction == 1${cb}">]]>
+#foreach($pk in $bean.PrimaryKey.Column)
+    <row>
+      <title><![CDATA[<bean:message key="${bean.Name}.${pk.Name}"/>]]></title>
+      <value>
+ 	  #if(($pk.Name.endsWith("_ID")) && ($pk.Type=="string"))
+ 	  	 <![CDATA[<html:hidden property="$pk.Name"/>]]>
+ 	  #else
+ 	  #set( $sel_class=" styleClass='input_select' " )
+ 	   	#if (($pk.Type == "date") || ($pk.Type == "timestamp"))
+ 	   		#set($cnt = $cnt + 1)
+     		<![CDATA[<peps:calendar property = "${pk.name}" formName = "${util.firstLower($bean.Name)}Form"/>]]>
+        #else	
+ 	   		<![CDATA[$util.strutsField($pk, $bean.Name,$sel_class)]]>
+ 	   	#end 
+  	  #end
+  
+      	</value>
+    </row>
+#end
+    <![CDATA[</c:when>]]>
+    <![CDATA[<c:otherwise>]]>
+   
+#foreach($pk in $bean.PrimaryKey.Column)
+    
+    <row>
+      <title><![CDATA[<bean:message key="${bean.Name}.${pk.Name}"/>]]></title>
+      <value>
+      <![CDATA[<html:hidden property="$pk.Name"/>]]>
+	  <![CDATA[<bean:write name="${util.firstLower($bean.Name)}Form" property="$pk.Name"/>]]> 
+     </value>
+    </row>
+#end
+    <![CDATA[</c:otherwise></c:choose>]]>
+#foreach($attr in $bean.Attribute.Column)
+	#set( $sel_class="" )
+	#set ($id_name="id_${attr.Name}")
+     
+   	#if ($attr.Validation.hasRequired() )
+		#set( $sel_class=" styleClass='input_select' " )
+   	#end
+   <![CDATA[
+     <tr id="${id_name}">
+         <td width = "5%">
+         </td>
+ 
+      <td width = "19%">
+          <font color = "#022077" size = "1" face = "Verdana, Arial, Helvetica, sans-serif">
+          <b>
+     	   	  <bean:message key="${bean.Name}.${attr.Name}"/>
+     	   </b>
+     	   </font>
+     	   	  
+      </td>
+      <td width = "76%">
+         <font size = "2" face = "Tahoma">
+      
+     #set($max_size = $attr.getValidation().getMaxLength())
+     #if($attr.Name=="UPDATE_BY")
+     	   <appl:updatedby property = "UPDATE_BY" username="true"/><!--(<bean:write name = "${util.firstLower($bean.Name)}Form" property = "UPDATE_BY"/>)-->
+     #elseif($attr.Name=="UPDATE_DT")
+        <appl:updatedby property = "UPDATE_DT" today="true"/>
+     #elseif (($attr.Type == "date") || ($attr.Type == "timestamp"))
+     	#set($cnt = $cnt + 1)
+     	 <peps:calendar property = "${attr.name}" formName = "${util.firstLower($bean.Name)}Form"/>
+     #elseif ($attr.Type == "string")
+		 #if ($max_size >80) 	 
+		 	#set ( $rows_ = ($max_size/80 +1))
+		 	#if($rows_ >8 )
+		 		#set($rows_ =8)
+		    #end
+		    <html:textarea $sel_class property="$attr.Name" cols="70" rows="$rows_" onkeypress="textCounter(this,$max_size);" />
+		 #else
+		    <html:text $sel_class property="$attr.Name" size="$max_size"  />
+		 #end
+	#else	 
+      $util.strutsField($attr, $bean.Name, $sel_class)
+    #end
+        </font>
+     
+     </td>
+##    </row>
+</tr>
+]]>
+ 
+#end
+
+
+
+    <footer>
+      <![CDATA[
+              <logic:messagesPresent>
+                <bean:message key="errors.header"/>
+                <ul>
+                  <html:messages id="error">
+                    <li>
+                      <bean:write name="error"/>
+                    </li>
+                  </html:messages>
+                </ul>
+                <hr/>
+              </logic:messagesPresent>
+      ]]>
+    </footer>
+  </table>
+  <footer>
+#if($bean.JavascriptValidation)
+#set($onclickfalse=' onclick="bCancel=false;"')
+#set($onclicktrue=' onclick="bCancel=true;"')
+#end
+    <![CDATA[
+          <html:submit styleClass="menubutton" 
+          onclick="javascript:{ if( form${bean.Name}Validated) {this.disabled=true; this.form.submit();}};">
+            <bean:message key="label.save"/>
+          </html:submit>
+          <html:reset styleClass="menubutton">
+            <bean:message key="label.reset"/>
+          </html:reset>
+      <c:choose>
+      <c:when test = "${s}${ob}requestScope['${util.firstLower($bean.Name)}Form'].map.strutsAction == 1}">
+      </c:when>
+      <c:otherwise>
+        <html:cancel styleClass = "menubutton"
+        
+        onclick = "javascript:{  form${bean.Name}Canceled = true;}">
+            <bean:message key = "label.cancel"/>
+        </html:cancel>
+
+      </c:otherwise>
+     </c:choose>
+          
+##          <html:cancel styleClass="menubutton">
+##            <bean:message key="label.cancel"/>
+##          </html:cancel>
+
+       ]]>
+  </footer>
+  </content>
+
+## <![CDATA[
+## <script language="JavaScript"  type="text/javascript">
+##    ]]>
+
+## #set( $cnt = 0 )
+## #foreach($field in $util.getAllColumnsPKFirst($bean))
+##  #if (($field.Type == "date") || ($field.Type == "timestamp"))
+##   #if($field.Name!="UPDATED_DT")
+##         #set($cnt = $cnt + 1)
+##	var cal${cnt} = new calendar2(document.forms['$util.firstLower($bean.Name)Form'].elements['${field.name}'],<![CDATA['<%=base%>']]>);
+##	cal${cnt}.year_scroll = true;
+##	cal${cnt}.time_comp = false;
+##   #end
+## #end
+## #end
+
+
+ <![CDATA[
+ ## </script>
+ 
+ <script language="JavaScript"  type="text/javascript">
+ var form${bean.Name}Validated= false;
+ var form${bean.Name}Canceled= false;
+  function validate${bean.Name}Form(theForm)
+  {
+   var element, value;
+    form${bean.Name}Validated= false;
+    
+    if ( form${bean.Name}Canceled ) {
+              return true;
+      }
+    
+    
+#foreach($column in $util.getAllColumns($bean))
+
+#if (($column.Name =="UPDATED_BY") || ($column.Name=="UPDATED_DT"))
+    // [$column.Name]  not tested
+#elseif (! $column.Name.endsWith("_ID"))
+
+	element=theForm.$column.Name;
+	if ( element)
+	{
+	   value= trim(element.value);
+	   #if ($column.Validation.hasRequired() )
+	   if (! value) {
+	      alert('Element $column.Name required.\n $column.Title.');
+	      setElementError( element );
+	      return false;
+	      }// end if requed
+	    #end
+
+	#if($util.isStringType($column.Type))
+	#if($column.Validation.hasMaxLength())
+		     if(element.value.length> $column.Validation.MaxLength ) {
+			        alert('Field $column.Name  exceeded length [$column.Validation.MaxLength]');
+				        setElementError( element );
+			        return false;
+		      }// end if string
+	#end
+	#end
+	#if($util.isNumberType($column.Type))
+			if (element.value!=""){
+		      if(!IsNumber(element.value)){
+		        alert("You have entered  value that is not a number. \nIt should contain nothing but numbers. \n For example: 500 for \nWhat is the probability of winning(%)\n[WIN_PROB]\n" + element.value );
+		        setElementError( element );
+		        form_submitted=false;
+		        return false;
+		      }
+		    }
+		    else{
+		      element.value=0;
+	       }  // end if number
+	#end
+
+#if($column.Type == "date")
+	
+	//  $column.Type
+#end
+	#if(($column.Type == "date") || ($column.Type == "timestamp"))
+			if(element.value != ""){
+		      if (element.value != 'null'){
+		        if(!isDate(element.value)){
+		          setElementError( element );
+		          form_submitted=false;
+		          return false;
+		        }
+		      }
+		   }// end if date
+
+	#end
+     }// end if element
+  #end ## // End if _ID
+
+#end ## // End Loop
+    form${bean.Name}Validated= true;
+   return true;
+
+  }
+
+  </script>
+
+  ]]>
+<![CDATA[
+</html:form>
+]]>
+</doc>
+

@@ -1,0 +1,154 @@
+##
+##  Copyright(C) 2006 Sprint inc )
+##
+##  This library is free software; you can redistribute it and/or
+##  modify it under the terms of the GNU Lesser General Public
+##  License as published by the Free Software Foundation; either
+##  version 2.1 of the License, or (at your option) any later version.
+##
+##  This library is distributed in the hope that it will be useful,
+##  but WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+##  Lesser General Public License for more details.
+##
+##  You should have received a copy of the GNU Lesser General Public
+##  License along with this library; if not, write to the Free Software
+##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+##
+
+package ${build.Package}.util;
+
+import java.util.*;
+public class Pager {
+  private static int MAX_PAGE_INDEX = 15;
+  private static String HEADER = "Result page";
+  static {
+    ResourceBundle prop = ResourceBundle.getBundle("resources.application");
+    try {
+      HEADER = prop.getString("pager.header.title");
+    } catch (Exception e) {
+    }
+    try {
+      MAX_PAGE_INDEX = Integer.parseInt(prop.getString("pager.max.page.index"));
+    } catch (Exception e) {
+    }
+  }
+
+  public static String generate(int offset, int length, int size, String url) {
+    if (length > size) {
+      String pref;
+      if (url.indexOf("?") > -1) {
+        pref = "&";
+      } else {
+        pref = "?";
+      }
+      String header = "<font face='Helvetica' size='-1'>"+HEADER+": ";
+      if (offset > 0) {
+        header += "&nbsp;<a href=\""+url+pref+"pager.offset="+(offset-size)+"\">[<< Prev]</a>\n";
+      }
+      int start;
+      int radius = MAX_PAGE_INDEX/2*size;
+      if (offset < radius) {
+        start = 0;
+      } else if(offset < length-radius) {
+        start = offset - radius;
+      } else {
+        start = (length/size-MAX_PAGE_INDEX)*size;
+      }
+      for(int i=start;i<length && i < start + MAX_PAGE_INDEX*size;i+=size) {
+        if (i == offset) {
+          header += "<b>"+(i/size+1)+"</b>\n";
+        } else {
+          header += "&nbsp;<a href=\""+url+pref+"pager.offset="+i+"\">"+(i/size+1)+"</a>\n";
+        }
+      }
+      if(offset < length - size) {
+        header += "&nbsp;<a href=\""+url+pref+"pager.offset="+((int)offset+(int)size)+"\">[Next >>]</a>\n";
+      }
+      header += "</font>";
+      return header;
+    } else {
+      return "";
+    }
+  }
+
+private static  String  getCallForm(int offset, String note)
+ {
+     StringBuffer buffer = new StringBuffer();
+     buffer.append("&nbsp;<a href=\"javascript:setOffset(");
+     buffer.append( offset);
+     buffer.append(");\">");
+     buffer.append( note); 
+     buffer.append("</a>\n");
+     return buffer.toString();
+ }
+
+ public static String generatePost(int offset, int length, int size, String url)
+ {
+     if (length > size)
+     {
+         String pref;
+         if (url.indexOf("?") > -1)
+         {
+             pref = "&";
+         }
+         else
+         {
+             pref = "?";
+         }
+         String header = "<font face='Helvetica' size='-1'>" + HEADER + ": ";
+         if (offset > 0)
+         {
+           //  header += "&nbsp;<a href=\"" + url + pref + "pager.offset="
+           //            + (offset - size) + "\">[<< Prev]</a>\n";
+             header +=  getCallForm(0 , "<<" );
+             header +=  getCallForm((offset - size) , "[Prev]" );
+         }
+         
+         int start;
+         int radius = MAX_PAGE_INDEX / 2 * size;
+         if (offset < radius)
+         {
+             start = 0;
+         }
+         else
+             if (offset < length - radius)
+             {
+                 start = offset - radius;
+             }
+             else
+             {
+                 start = (length / size - MAX_PAGE_INDEX) * size;
+             }
+         for (int i = (start>-1?start:0); i < length && i < start + MAX_PAGE_INDEX * size; i += size)
+         {
+             if (i == offset)
+             {
+                 header += "<b>" + (i / size + 1) + "</b>\n";
+             }
+             else
+             {
+               //  header += "&nbsp;<a href=\"" + url + pref + "pager.offset="
+               //            + i + "\">" + (i / size + 1) + "</a>\n";
+                 header +=  getCallForm(i, String.valueOf((i / size + 1))); 
+             }
+         }
+         if (offset < length - size)
+         {
+            // header += "&nbsp;<a href=\"" + url + pref + "pager.offset="
+                       //+ ((int) offset + (int) size) + "\">[Next >>]</a>\n";
+            // 
+             header +=  getCallForm(((int) offset + (int) size),"[Next]");
+             header +=  getCallForm(((int)(length - size)),">>");
+             
+         }
+         header += "</font>";
+         return header;
+     }
+     else
+     {
+         return "";
+     }
+ }
+
+}

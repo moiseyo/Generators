@@ -1,0 +1,267 @@
+<!-- edited with XML Spy v4.3 U (http://www.xmlspy.com) by Azrul Azwar (CNRG) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+  <xs:element name="strutscreator">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="property">
+          <xs:annotation>
+            <xs:documentation>Information about project properties</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="name" type="xs:string"/>
+              <xs:element name="version" type="xs:string"/>
+              <xs:element name="author" type="xs:string"/>
+              <xs:element name="company" type="xs:string"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="build">
+          <xs:annotation>
+            <xs:documentation>Information about project build property</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="directory" type="xs:string"/>
+              <xs:element name="package" type="xs:string"/>
+              <xs:element name="war-file-name" type="xs:string"/>
+              <xs:element name="compiler" type="xs:string"/>
+              <xs:element name="library-path" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+              <xs:element name="servlet-container-name" type="xs:string"/>
+              <xs:element name="servlet-container-dir" type="xs:string"/>
+              <xs:element name="date-format" type="xs:string"/>
+              <xs:element name="url-pattern" type="xs:string" minOccurs="0"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="database">
+          <xs:annotation>
+            <xs:documentation>Information about database</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="dbms" type="xs:string"/>
+              <xs:element name="driver" type="xs:string"/>
+              <xs:element name="url" type="xs:string"/>
+              <xs:element name="user" type="xs:string"/>
+              <xs:element name="password" type="xs:string"/>
+              <xs:element name="jndi" type="xs:string"/>
+              <xs:element name="minimum-connections" type="xs:integer"/>
+              <xs:element name="maximum-connections" type="xs:integer"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="security" minOccurs="0">
+          <xs:annotation>
+            <xs:documentation>Information about security constraint</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="security-role" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+              <xs:element name="security-constraint" minOccurs="0" maxOccurs="unbounded">
+                <xs:annotation>
+                  <xs:documentation>Web Resource definition in web.xml file.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="name" type="xs:string"/>
+                    <xs:element name="url-pattern" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+                    <xs:element name="security-role" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="global-value-ref" minOccurs="0" maxOccurs="unbounded">
+          <xs:annotation>
+            <xs:documentation>Pair code/display used by dropdown list/radio button</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="name" type="xs:string"/>
+              <xs:element ref="choice" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="global-reference" minOccurs="0" maxOccurs="unbounded">
+          <xs:annotation>
+            <xs:documentation>Reference that will be put in application or session scope</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="name" type="xs:string"/>
+              <xs:element name="bean-name" type="xs:string"/>
+              <xs:element name="query-name" type="xs:string"/>
+              <xs:element name="scope" type="xs:string"/>
+              <xs:element name="param" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="bean" minOccurs="0" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="name" type="xs:string"/>
+              <xs:element name="region" type="xs:string" minOccurs="0"/>
+              <xs:element name="user" type="xs:string" minOccurs="0"/>
+              <xs:element name="chkprocess" type="xs:string" minOccurs="0"/>
+              <xs:element name="sorting" type="xs:string" minOccurs="0"/>
+              <xs:element name="sql-name" type="xs:string" minOccurs="0"/>
+              <xs:element name="cache-mtl" type="xs:integer" minOccurs="0">
+                <xs:annotation>
+                  <xs:documentation>Cache object's minute to live</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element name="generate-dao" type="xs:boolean"/>
+              <xs:element name="generate-process" type="xs:boolean"/>
+              <xs:element name="page-length" type="xs:integer" minOccurs="0"/>
+              <xs:element name="javascript-validation" type="xs:boolean" minOccurs="0"/>
+              <xs:element name="primary-key">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element ref="column" maxOccurs="unbounded"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="attribute" minOccurs="0">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element ref="column" maxOccurs="unbounded"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="query" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="name" type="xs:string"/>
+                    <xs:element name="condition" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="field-name" type="xs:string"/>
+                          <xs:element name="field-condition" type="xs:string"/>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="result" type="xs:string"/>
+                    <xs:element name="aggregate-condition" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+                    <xs:element name="sorting" minOccurs="0" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="field-name" type="xs:string"/>
+                          <xs:element name="order" type="xs:string" minOccurs="0"/>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="process" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="name" type="xs:string"/>
+                    <xs:element name="page" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="title" type="xs:string"/>
+                          <xs:element name="field-name" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+                          <xs:element name="forward" minOccurs="0" maxOccurs="unbounded">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="name" type="xs:string"/>
+                                <xs:element name="path" type="xs:string"/>
+                              </xs:sequence>
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="success-path" type="xs:string" minOccurs="0"/>
+                    <xs:element name="cancel-path" type="xs:string" minOccurs="0"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="menu" minOccurs="0" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="title" type="xs:string"/>
+              <xs:element name="menu-item" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="title" type="xs:string"/>
+                    <xs:element name="path" type="xs:string"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="role" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="column">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="name" type="xs:string"/>
+        <xs:element name="sql-name" type="xs:string" minOccurs="0"/>
+        <xs:element name="title" type="xs:string"/>
+        <xs:element name="type" type="xs:string"/>
+        <xs:element name="validation">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="required" type="xs:boolean"/>
+              <xs:element name="min-length" type="xs:integer" minOccurs="0"/>
+              <xs:element name="max-length" type="xs:integer" minOccurs="0"/>
+              <xs:element name="min" type="xs:integer" minOccurs="0"/>
+              <xs:element name="max" type="xs:integer" minOccurs="0"/>
+              <xs:element name="mask" type="xs:string" minOccurs="0"/>
+              <xs:element name="maskmsg" type="xs:string" minOccurs="0"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="format" type="xs:string" minOccurs="0"/>
+        <xs:element name="value" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="widget" type="xs:string"/>
+              <xs:element ref="choice" minOccurs="0" maxOccurs="unbounded"/>
+              <xs:element name="global-value-ref" type="xs:string" minOccurs="0"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <!--
+        <xs:element name="type">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:enumeration value="int"/>
+              <xs:enumeration value="long"/>
+              <xs:enumeration value="byte"/>
+              <xs:enumeration value="float"/>
+              <xs:enumeration value="double"/>
+              <xs:enumeration value="boolean"/>
+              <xs:enumeration value="char"/>
+              <xs:enumeration value="short"/>
+              <xs:enumeration value="string"/>
+              <xs:enumeration value="auto"/>
+              <xs:enumeration value="date"/>
+              <xs:enumeration value="timestamp"/>
+              <xs:enumeration value="memo"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        -->
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="choice">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="code" type="xs:string"/>
+        <xs:element name="display" type="xs:string" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

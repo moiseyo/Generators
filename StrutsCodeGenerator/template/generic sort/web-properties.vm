@@ -1,0 +1,126 @@
+##
+##   Copyright(C) 2006 Sprint
+##
+##  This library is free software; you can redistribute it and/or
+##  modify it under the terms of the GNU Lesser General Public
+##  License as published by the Free Software Foundation; either
+##  version 2.1 of the License, or (at your option) any later version.
+##
+##  This library is distributed in the hope that it will be useful,
+##  but WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+##  Lesser General Public License for more details.
+##
+##  You should have received a copy of the GNU Lesser General Public
+##  License along with this library; if not, write to the Free Software
+##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+##
+label.ok=OK
+label.process=Process
+label.query=Query
+label.save=Save
+label.cancel=Cancel
+label.next=Next
+label.continue=Continue
+label.back=Back
+label.finish=Finish
+label.edit=Edit
+label.add=Add
+label.view=View
+label.remove=Remove
+label.list=List
+
+errors.header=<hr>Error occured:
+errors.footer=
+error.null=Blank input is not valid for field {0}.
+error.general={0}
+error.notfound=Not found!
+error.object.notfound=Object {0} was not found (probabaly has been removed)!
+error.save.fail=Error on saving object {0}
+error.invalid=Invalid input for field {0}: "{1}"
+error.password=Field {0} and it's confirmation are not equal
+
+errors.required={0} must exist.
+errors.minlength={0} must not less then {1} character.
+errors.maxlength={0} must not exceed {1} character.
+errors.invalid={0} is invalid.
+
+errors.byte={0} must have type of byte.
+errors.short={0} must have type of short.
+errors.integer={0} must have type of integer.
+errors.long={0} must have type of long.
+errors.float={0} must have type of float.
+errors.double={0} must have type of double.
+
+errors.date={0} is not a date.
+errors.range={0} not in range {1} - {2}.
+errors.creditcard={0} not a valid credit card.
+errors.email={0} not a valid e-mail address.
+
+errors.database.duplicate=Key duplication error when inserting object {0}
+
+not.available=N/A
+
+list.page.length=20
+pager.header.title=Result Page:
+pager.max.page.index=15
+
+date.format=${dateFormat}
+timestamp.maskmsg=Invalid Timestamp type value
+
+#if($globalValueRef)
+#foreach($ref in $globalValueRef)
+#set($code0 = false)
+#foreach($choice in $ref.Choice)
+#if($choice.Code == "0")#set($code0 = true)#end
+#if($choice.Display)
+${ref.Name}.${choice.Code}=${choice.Display}
+#else
+${ref.Name}.${choice.Code}=${choice.Code}
+#end
+#end
+${ref.Name}.=N/A
+#if(!$code0)
+${ref.Name}.0=N/A
+#end
+
+#end
+#end
+
+#foreach($bean in $beans)
+#if($bean.GenerateDao || $bean.GenerateProcess)
+#foreach($process in $bean.Process)
+#foreach($page in $process.Page)
+#if($process.getPageCount() == 1)
+#foreach($forward in $page.Forward)
+label.${process.Name}.${forward.Name}=$forward.Name
+#end
+#else
+#set($pageCounter = $velocityCount)
+#foreach($forward in $page.Forward)
+label.${process.Name}${pageCounter}.${forward.Name}=$forward.Name
+#end
+#end
+#end
+#end
+#foreach($column in $util.getAllColumns($bean))
+${bean.Name}.${column.Name}=${column.Title}
+#if($column.Format)
+${bean.Name}.${column.Name}.format=${column.Format}
+#end
+#if($column.Validation.Maskmsg)
+${bean.Name}.${column.Name}.maskmsg=${column.Validation.Maskmsg}
+#end
+#if($column.Value)
+#foreach($choice in $column.Value.Choice)
+#if($choice.Display)
+${bean.Name}.${column.Name}.${choice.Code}=${choice.Display}
+#else
+${bean.Name}.${column.Name}.${choice.Code}=${choice.Code}
+#end
+#end
+#end
+#end
+#end
+
+#end

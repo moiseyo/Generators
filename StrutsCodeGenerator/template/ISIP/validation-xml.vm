@@ -1,0 +1,140 @@
+##
+##   Copyright(C) 2006 Sprint
+##
+##  This library is free software; you can redistribute it and/or
+##  modify it under the terms of the GNU Lesser General Public
+##  License as published by the Free Software Foundation; either
+##  version 2.1 of the License, or (at your option) any later version.
+##
+##  This library is distributed in the hope that it will be useful,
+##  but WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+##  Lesser General Public License for more details.
+##
+##  You should have received a copy of the GNU Lesser General Public
+##  License along with this library; if not, write to the Free Software
+##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+##
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+
+<!DOCTYPE form-validation PUBLIC
+          "-//Apache Software Foundation//DTD Commons Validator Rules Configuration 1.0.1//EN"
+          "http://jakarta.apache.org/commons/dtds/validator_1_0_1.dtd">
+
+
+#set($minlength = '${var:minlength}')
+#set($maxlength = '${var:maxlength}')
+#set($min = '${var:min}')
+#set($max = '${var:max}')
+#macro(columnValidation $column $page)
+#set($depends=$util.getValidationDependencies($column.Type, $column.Validation))
+#if(!$depends.equals(""))
+      <field property="$column.Name" depends="$depends"#if($page) page="$page"#end>
+        <arg0 key="${bean.Name}.${column.Name}"/>
+#if($util.isStringType($column.Type))
+#if($column.Validation.hasMinLength())
+        <arg1 name="minlength" key="$minlength" resource="false"/>
+#if($column.Validation.MaxLength)
+        <arg2 name="maxlength" key="$maxlength" resource="false"/>
+#end
+#elseif($column.Validation.hasMaxLength())
+        <arg1 name="maxlength" key="$maxlength" resource="false"/>
+#elseif($util.isStringType($column.Type))
+        <arg1 name="maxlength" key="30" resource="false"/>
+#end
+#if($column.Type == "timestamp")
+          <var>
+            <var-name>mask</var-name>
+            <var-value>^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{1,9})?$</var-value>
+          </var>
+          <msg name="mask" key="timestamp.maskmsg"/>
+#else
+#if($column.Validation.Mask)
+          <var>
+            <var-name>mask</var-name>
+            <var-value>$column.Validation.Mask</var-value>
+          </var>
+          <msg name="mask" key="${bean.Name}.${column.Name}.maskmsg"/>
+#end
+#end
+#if($column.Validation.hasMinLength())
+        <var>
+          <var-name>minlength</var-name>
+          <var-value>$column.Validation.MinLength</var-value>
+        </var>
+#end
+#if($column.Validation.hasMaxLength())
+        <var>
+          <var-name>maxlength</var-name>
+          <var-value>$column.Validation.MaxLength</var-value>
+        </var>
+#end
+#if($column.Type == "password")
+        <var>
+          <var-name>password2</var-name>
+          <var-value>${column.Name}2</var-value>
+        </var>
+#end
+#end
+#if($util.isNumberType($column.Type))
+#if($column.Validation.hasMin() && $column.Validation.hasMax())
+         <arg1 name="range" key="$min" resource="false"/>
+         <arg2 name="range" key="$max" resource="false"/>
+         <var>
+           <var-name>min</var-name>
+           <var-value>$column.Validation.Min</var-value>
+         </var>
+         <var>
+           <var-name>max</var-name>
+           <var-value>$column.Validation.Max</var-value>
+         </var>
+#end
+#end
+#if($column.Type == "date")
+         <var>
+            <var-name>datePatternStrict</var-name>
+            <var-value>${dateFormat}</var-value>
+         </var>
+#end
+      </field>
+#end
+#end
+<form-validation>
+  <formset>
+#foreach($bean in $beans)
+#if($bean.GenerateDao || $bean.GenerateProcess)
+    <form name="${util.firstLower($bean.Name)}Form">
+#foreach($column in $util.getAllColumns($bean))
+#columnValidation($column false)
+#end
+    </form>
+#end
+
+##
+## Processing
+##
+
+#foreach($process in $bean.Process)
+#if($process.getPageCount() >1)
+    <form name="${util.firstLower($bean.Name)}${process.Name}Form">
+#foreach($page in $process.Page)
+#set($pageNum = $velocityCount)
+#foreach($column in $util.getProcessPageFieldList($bean,$page))
+#columnValidation($column $pageNum)
+#end
+#end
+    </form>
+#else
+    <form name="${util.firstLower($bean.Name)}${process.Name}Form">
+#foreach($page in $process.Page)
+#set($pageNum = $velocityCount)
+#foreach($column in $util.getProcessPageFieldList($bean,$page))
+#columnValidation($column false)
+#end
+#end
+    </form>
+#end
+#end
+#end
+  </formset>
+</form-validation>

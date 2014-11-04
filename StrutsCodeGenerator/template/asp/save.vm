@@ -1,0 +1,277 @@
+##
+##
+<doc><![CDATA[	<%@ Language=VBScript%>
+#parse ("template/asp/top.vm")
+
+<%
+Dim mode
+dim bDebug
+bDebug = false
+'bDebug = true
+dim cmd
+
+
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+Dim  $field.Name
+#end
+
+ mode = request("mode")
+
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+ $field.Name=request("$field.Name")
+#end
+
+const adChar = 129
+const adDecimal = 14
+const adParamInput = 1
+const adCmdText = 1
+const adNumeric = 131
+const adDouble = 5
+const adDate = 7
+
+
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+const F_${field.Name} = "${field.Name}"
+#end
+
+if ( bDebug ) then
+	 Response.Write "mode:" & mode & "<br>"
+
+end if
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+ $field.Name=request("$field.Name")
+#end
+
+
+
+ if ( not( mode="edit" or mode="new" ) ) then
+ %>
+ <h1> Not valid mode </h1>
+
+ <%
+ Response.end
+ end if
+
+
+%>
+
+<td>
+<div id="${bean.Name}1" style="position:absolute;  left:142px;">
+
+  <% SaveData %>
+<P>
+
+<FORM name="thisForm" METHOD="post" ACTION ="${bean.Name}_summary.asp">
+<INPUT id="submit1" class="pdg_button" name="submit1" type=submit value="   OK    ">
+</P>
+</FORM>
+
+</body>
+</html>
+
+<%
+
+
+Sub SetParameters(cmd)
+
+	dim num
+	num = 0
+#foreach($field in $util.getAllColumns($bean))
+#if ( ${field.Type}=="string" )
+#set($type="adChar")
+#end
+#if ( ${field.Type}=="int" )
+#set($type="adNumeric")
+#end
+#if ( ${field.Type}=="timestamp" )
+#set($type="adDate")
+#end
+##' ${field.Type}
+
+		 Call AddAsField( cmd, num, F_${field.Name},${type},${field.Validation.MaxLength})
+#end
+End Sub
+
+Sub SetParametersDup( cmd)
+
+	dim num
+	num = 0
+#foreach($field iin $bean.PrimaryKey.Column)
+#if ( ${field.Type}=="string" )
+#set($type="adChar")
+#end
+#if ( ${field.Type}=="int" )
+#set($type="adNumeric")
+#end
+#if ( ${field.Type}=="timestamp" )
+#set($type="adDate")
+#end
+' ${field.Type}
+		 Call AddAsField( cmd ,num, F_${field.Name},${type},${field.Validation.MaxLength})
+#end
+
+
+
+End Sub
+
+
+Sub AddAsField( cmd, num, name , tp, l )
+		if  bDebug  then
+  	 Response.Write  name & ":" &  num     & "<BR>"
+		end if
+  if tp = adChar then
+    cmd.Parameters.Append cmd.CreateParameter(name, tp, adParamInput, l, "0")
+  else
+    cmd.Parameters.Append cmd.CreateParameter(name, tp, adParamInput)', l,1)
+  end if
+  num = num + 1
+End Sub
+
+sub dumpParm( cmd)
+ dim i
+   if bDebug then
+    Response.Write " Count :"  & cmd.Parameters.count     & "<BR>"
+     for i =0 to  cmd.Parameters.count-1
+      Response.Write  cmd.Parameters(i).name & " : "  & cmd.Parameters(i).Value & " <BR> "
+      next
+			 Response.Write   cmd.CommandText & "<br>"
+
+   end if
+
+end sub
+
+ Sub SaveData
+   dim sTmp, i,  sKey
+	 Dim rst
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+    Response.Write  "$field.Name   :" &    $field.Name     & "<BR>"
+#end
+
+#foreach($field in $bean.PrimaryKey.Column)
+   if Len($field.Name) <1  then
+    	Response.Write  "Error in '$field.Title' <BR>"
+    	exit sub
+   end if
+#end
+
+set conn1 = getPdgConnection
+
+  SET cmd = Server.CreateObject("ADODB.Command")
+	set rst = Server.CreateObject( "ADODB.Recordset")
+  cmd.ActiveConnection =   conn1
+	tName  ="${bean.SqlName}"
+   if	  mode ="new" then
+			 dim cmdDup
+       SET cmdDup = Server.CreateObject("ADODB.Command")
+		   sTmp = " select  count (*) as CNT from $bean.SqlName where "
+				i=0
+				sKey=""
+#foreach($field in $bean.PrimaryKey.Column)
+			if i >0 then
+				sKey =Skey & " and "
+			end if
+			sKey =sKey & " $field.Name = ?"
+			i=i+1
+#end
+		sTmp=sTmp & sKey
+	  SetParametersDup( cmdDup)
+    cmdDup.CommandText = sTmp
+
+#foreach($field in $bean.PrimaryKey.Column)
+   cmdDup.Parameters(F_${field.Name} ) =   ${field.Name}
+#end
+  cmddup.ActiveConnection =   conn1
+
+	  dumpParm cmdDup
+    rst =cmdDup.Execute
+		i=cInt(rst("CNT"))
+		if i  > 0 then
+		k=0
+#foreach($field in $bean.PrimaryKey.Column)
+			if k >0 then
+				sKey =Skey & ","
+			end if
+			sKey =sKey & "'" &   $field.Name  & "'"
+			k=k+1
+#end
+
+		%>
+				<h2>  Record <%=sKey %> is alredy in table </h2>
+		<%
+		end if
+	 //	rst.close
+		set rst= Nothing
+    set cmdDup = Nothing
+
+		if i  > 0 then
+		conn1.close
+			exit sub
+
+		end if
+
+     sTmp ="INSERT into " & tName
+     sTmp = sTmp & "( "
+		 i=0
+#foreach($field in $util.getAllColumns($bean))
+			if i >0 then
+				sTmp =sTmp & ","
+			end if
+			sTmp =sTmp & "$field.Name"
+			i=i+1
+#end
+	sTmp =stmp & ") VALUES ("
+	i=0
+#foreach($field in $util.getAllColumns($bean))
+			if i >0 then
+				sTmp =sTmp & ","
+			end if
+		 	sTmp =sTmp & "?"
+			i=i+1
+
+ #end
+
+		 	sTmp =sTmp & ")"
+
+   else
+     sTmp ="UPDATE  "&  tName & " SET "
+			i=0
+#foreach($field in $bean.Attribute.Column)
+			if i >0 then
+				sTmp =sTmp & ","
+			end if
+			sTmp =sTmp & " $field.Name = ?"
+			i=i+1
+#end
+     sTmp = sTmp &  " WHERE "
+		 i=0
+#foreach($field in $bean.PrimaryKey.Column)
+			if i >0 then
+				sTmp =sTmp & " and "
+			end if
+			sTmp =sTmp & " $field.Name = ?"
+			i=i+1
+#end
+   end if
+
+   cmd.CommandText = sTmp
+	SetParameters(cmd)
+
+#foreach($field in $util.getAllColumns($bean))
+   cmd.Parameters(F_${field.Name} ) =   ${field.Name}
+#end
+
+
+##   end if
+    dumpParm cmd
+    cmd.Execute
+    set cmd = Nothing
+    Response.Write "<p><br> Data ${bean.Name} Saved Mode(" & mode & "). </p> "
+
+
+end sub
+%>
+
+#include("template/asp/buttom.vm")
+]]>
+</doc>
+

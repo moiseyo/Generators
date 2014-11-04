@@ -1,0 +1,797 @@
+##
+##
+##  This library is free software; you can redistribute it and/or
+##  modify it under the terms of the GNU Lesser General Public
+##  License as published by the Free Software Foundation; either
+##  version 2.1 of the License, or (at your option) any later version.
+##
+##  This library is distributed in the hope that it will be useful,
+##  but WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+##  Lesser General Public License for more details.
+##
+##  You should have received a copy of the GNU Lesser General Public
+##  License along with this library; if not, write to the Free Software
+##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+##
+
+//---------------------------------------------------------
+// Application: $property.Name
+// Author     : $property.Author
+// File       : ${bean.Name}Action.java
+//
+// Copyright $year $property.Company
+// Created at $date.Time
+// 
+
+//  Revision  2.0.0.0   6/18/2004 1:03PM
+//---------------------------------------------------------
+##Primary Key list
+#macro(pklist $bean)
+#foreach($column in $bean.PrimaryKey.Column)
+#if($velocityCount == 1)$column.Name#else, $column.Name#end#end
+#end
+
+package ${build.Package}.controller;
+
+import javax.sql.*;
+import java.util.*;
+import javax.sql.*;
+import javax.servlet.http.*;
+import javax.servlet.*;
+import org.apache.struts.*;
+import org.apache.struts.validator.*;
+import org.apache.struts.action.*;
+import org.apache.struts.util.*;
+import com.sprint.peps.sql.*;
+import com.sprint.peps.html.*;
+import com.sprint.peps.oracle.*;
+import com.sprint.struts.dao.*;
+import com.sprint.struts.util.*;
+import com.sprint.struts.controller.*;
+import ${build.Package}.model.*;
+import ${build.Package}.dao.*;
+import ${build.Package}.util.*;
+import ${build.Package}.*;
+import ${build.Package}.sql.*;
+
+import org.apache.commons.logging.LogFactory;
+
+#foreach($column in $util.getAllColumnsNoAuto($bean))
+#if($column.Type == "date")#set($isDateFieldExist = true)#end#end
+#if($isDateFieldExist)
+import java.text.*;
+#end
+
+import javax.servlet.http.*;
+import javax.servlet.*;
+
+import org.apache.struts.*;
+import org.apache.struts.validator.*;
+import org.apache.struts.action.*;
+import org.apache.struts.util.*;
+
+import ${build.Package}.model.*;
+import ${build.Package}.dao.*;
+import ${build.Package}.util.*;
+
+/**
+ *  ${bean.Name}Action subclass for providing bean specific functionality.
+ */
+public class ${bean.Name}Action extends UpperAction {
+  public final static String ADD = "1";
+  public final static String EDIT = "2";
+  private org.apache.commons.logging.Log __log = LogFactory.getFactory().getInstance(this.getClass());
+#if($isDateFieldExist)
+  private static String DATE_FORMAT = "${dateFormat}";
+  private static SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
+#end
+#if($bean.generateDao)
+#if($bean.PageLength && $bean.PageLength > 0)
+  private static final int PAGE_LENGTH = $bean.PageLength;
+#else
+  private static int PAGE_LENGTH = 10;
+
+  static {
+    ResourceBundle prop = ResourceBundle.getBundle("resources.application");
+    try {
+      PAGE_LENGTH = Integer.parseInt(prop.getString("list.page.length"));
+    } catch (Exception e) {
+    }
+  }
+#end
+#end
+
+  /**
+   *  Override the Struts Action's execute() method. The appropriate
+   *  performXxxxx() method is invoked based on the Struts ActionMapping
+   *  parameter.
+   *
+   *  @param mapping      The ActionMapping used to select this instance.
+   *  @param actionForm   The optional ActionForm bean for this request.
+   *  @param request      The HTTP request to process.
+   *  @param response     The HTTP response to process.
+   *
+   *  @return             An ActionForward value derived from the invoked
+   *                      performXxxxx() method, or 'cancel' or 'failure'.
+   */
+  public ActionForward execute(ActionMapping mapping, ActionForm actionForm,
+      HttpServletRequest request, HttpServletResponse response)
+      throws java.lang.Exception
+		{
+		preExequte(mapping, actionForm, request, response);
+    ActionForward myforward = null;
+    String myaction = mapping.getParameter();
+
+
+    if (isCancelled(request)) {
+      if (__log.isInfoEnabled()) {
+        __log.info(" [${bean.Name}] " + mapping.getAttribute() + " - action was cancelled");
+      }
+      return mapping.findForward("cancel");
+    }
+    if (__log.isInfoEnabled()) {
+      __log.info(" [${bean.Name}] action: "+myaction);
+    }
+    if ("".equalsIgnoreCase(myaction)) {
+      myforward = mapping.findForward("failure");
+#if($bean.GenerateDao)
+    } else if ("VIEW".equalsIgnoreCase(myaction)) {
+      myforward = performView(mapping, actionForm, request, response);
+    } else if ("EDIT".equalsIgnoreCase(myaction)) {
+      myforward = performEdit(mapping, actionForm, request, response);
+    } else if ("ADD".equalsIgnoreCase(myaction)) {
+      myforward = performAdd(mapping, actionForm, request, response);
+    } else if ("SAVE".equalsIgnoreCase(myaction)) {
+      myforward = performSave(mapping, actionForm, request, response);
+    } else if ("REMOVE".equalsIgnoreCase(myaction)) {
+      myforward = performRemove(mapping, actionForm, request, response);
+    } else if ("TRASH".equalsIgnoreCase(myaction)) {
+      myforward = performTrash(mapping, actionForm, request, response);
+    } else if ("REPORT".equalsIgnoreCase(myaction)) {
+      myforward = performReport(mapping, actionForm, request, response);
+    } else if ("LIST".equalsIgnoreCase(myaction)) {
+      myforward = performList(mapping, actionForm, request, response);
+#end
+#if($bean.GenerateDao)
+#foreach($query in $bean.Query)
+    } else if ("$query.Name.toUpperCase()".equalsIgnoreCase(myaction)) {
+      myforward = perform${query.Name}(mapping, actionForm, request, response);
+#end
+#end
+#if($bean.GenerateProcess)
+#foreach($process in $bean.Process)
+    } else if ("$process.Name.toUpperCase()".equalsIgnoreCase(myaction)) {
+      myforward = perform${util.firstUpper($process.Name)}(mapping, actionForm, request, response);
+#foreach($page in $process.Page)
+    } else if ("${process.Name.toUpperCase()}$velocityCount".equalsIgnoreCase(myaction)) {
+      myforward = perform${util.firstUpper($process.Name)}$velocityCount(mapping, actionForm, request, response);
+#end
+#end
+#end
+    } else {
+      myforward = mapping.findForward("failure");
+    }
+    return myforward;
+  }
+
+#macro(datasource)
+##      DataSource ds = (DataSource) servlet.getServletContext().getAttribute(Globals.DATA_SOURCE_KEY);
+##       DataSource ds =	NepsConnection.getDataSource();
+##       ${bean.Name}DAO ${util.firstLower($bean.Name)}DAO = new ${bean.Name}DAO(ds);
+       ${bean.Name}DAO ${util.firstLower($bean.Name)}DAO = new ${bean.Name}DAO();
+			 ${util.firstLower($bean.Name)}DAO.setUView(user);
+#end
+
+#if($bean.GenerateDao)
+  /**
+   *  The performList() method is used to retrieve a subset of ${bean.Name} objects
+   *  that is bound by the request parameter 'pager.offset' and the PAGE_LENGTH
+   *  constant.
+   *
+   *  @param mapping      The ActionMapping used to select this instance.
+   *  @param actionForm   The optional ActionForm bean for this request.
+   *  @param request      The HTTP request to process.
+   *  @param response     The HTTP response to process.
+   *
+   *  @return             An ActionForward for either 'success' or 'failure'.
+   */
+  private ActionForward performList(ActionMapping mapping, ActionForm actionForm, HttpServletRequest request, HttpServletResponse response) {
+    try {
+#datasource()
+      DynaValidatorForm form = (DynaValidatorForm) actionForm;
+      int offset;
+      int length = PAGE_LENGTH;
+      SqlSatement stmp = ${util.firstLower($bean.Name)}DAO.getSqlStmnt();
+##      Map hsearch= new  HashMap();
+
+      Vector vorder = stmp.getVOrderBy();
+      stmp.clear();
+      if ( form != null)
+      {
+#foreach($field in $util.getAllColumnsPKFirst($bean))
+#if ($field.Type == "string" )
+        String $field.Name = (String) form.get("$field.Name");
+        stmp.addWhereLike("$field.Name", $field.Name);
+##      addSearch(hsearch,"$field.Name", $field.Name);
+
+   		if (__log.isInfoEnabled())
+   		  {
+   		         __log.info(" [$field.Name] " + $field.Name);
+   		  }
+#end
+##${field.Type}
+#if ($field.Type == "int" )
+/*
+      Integer $field.Name = (Integer) form.get("$field.Name");
+  	  stmp.addWhere("$field.Name=" + $field.Name);
+   		if (__log.isInfoEnabled())
+   		     {
+   		         __log.info(" [$field.Name] " + $field.Name);
+   		   }
+ */
+#end
+#end
+      }
+
+   			Vector vNewOrder = addSearch(request,"$bean.Name");
+            if ((vNewOrder != null) &&( vNewOrder.size()>0))
+            {
+                stmp.setVOrderBy(vNewOrder);
+            }
+            else
+            {
+              stmp.setVOrderBy(vorder);
+            }  
+
+
+  
+
+#if ($bean.Region)
+
+    stmp.addWhere(${util.firstLower($bean.Name)}DAO.getExtraWhere());
+
+#end
+
+
+      String pageOffset = request.getParameter("pager.offset");
+      if (pageOffset == null || pageOffset.equals("")) {
+        offset = 0;
+      } else {
+        offset = Integer.parseInt(pageOffset);
+      }
+            if (__log.isInfoEnabled())
+            {
+                //  System.err.println(logins.size());
+                __log.info(" [$bean.Name:  Perform List acation] ");
+                __log.info(" [$bean.Name: sql ] " + stmp.toSql());
+            }
+
+
+      List ${util.firstLower($bean.Name)}s = ${util.firstLower($bean.Name)}DAO.list(offset, length);
+
+      String[] objKeys = {"${bean.Name}", "list"};
+      String objKey = CacheManager.createKey(objKeys);
+      Integer size = (Integer)SizeCacheManager.getCache(objKey);
+			stmp.clearAnd();
+      size = new Integer(
+		  ${util.firstLower($bean.Name)}DAO.getSize(	${util.firstLower($bean.Name)}DAO.getTableName(), stmp.getWherePath()));
+
+      if(size == null) {
+        SizeCacheManager.putCache(size, objKey, $bean.CacheMtl);
+      }
+
+#if($build.UrlPattern == "*.do")
+      String url = request.getContextPath()+"/"+mapping.getPath()+".do";
+#else
+      String url = request.getContextPath()+"/do"+mapping.getPath();
+#end
+      String pagerHeader = Pager.generatePost(offset, size.intValue(), length, url);
+      request.setAttribute("pagerHeader", pagerHeader);
+      String  total = String.valueOf(size);
+      request.setAttribute("recordSize", total);
+      request.setAttribute("${bean.Name.toUpperCase()}S", ${util.firstLower($bean.Name)}s);
+  ##    request.setAttribute("searchmap", hsearch);
+  
+    request.setAttribute("beanName","${bean.Name}");
+           
+    }
+   catch (Exception e)
+     {
+      generalError(request, e);
+      return mapping.findForward("failure");
+    }
+
+    return mapping.findForward("success");
+  }
+
+    /**
+     *  The performView() method is used to retrieve a ${bean.Name} object based on the
+     *  tables primary key(s) as defined in the request parameters.
+     *
+     *  @param mapping      The ActionMapping used to select this instance.
+     *  @param actionForm   The optional ActionForm bean for this request.
+     *  @param request      The HTTP request to process.
+     *  @param response     The HTTP response to process.
+     *
+     *  @return             An ActionForward for either 'success' or 'failure'.
+     */
+  private ActionForward performView(ActionMapping mapping, ActionForm actionForm, HttpServletRequest request, HttpServletResponse response) {
+    DynaValidatorForm form = (DynaValidatorForm) actionForm;
+    try {
+#datasource()
+
+#foreach($pk in $bean.PrimaryKey.Column)
+      $util.fqJavaType($pk.Type) $pk.Name = $util.requestParam($pk);
+#end
+      ${bean.Name} $util.firstLower($bean.Name) = ${util.firstLower($bean.Name)}DAO.retrieve(#pklist($bean));
+      if ($util.firstLower($bean.Name) == null) {
+        ActionMessages aes = new ActionMessages();
+        aes.add(aes.GLOBAL_MESSAGE, new ActionMessage("error.object.notfound", "$bean.Name"));
+        saveErrors(request, aes);
+        if (__log.isErrorEnabled()) {
+          __log.error(" [${bean.Name}] Object not found");
+        }
+        return mapping.findForward("failure");
+      } else {
+        org.apache.commons.beanutils.BeanUtils.copyProperties(form, $util.firstLower($bean.Name));
+#foreach($column in $util.getAllColumns($bean))
+#if($column.Value)
+        try {
+#if($column.Value.GlobalValueRef)
+#if($util.isStringType($column.Type))
+          form.set("${column.Name}Display", "${column.Value.GlobalValueRef}."+${util.firstLower($bean.Name)}.get${util.firstUpper(${column.Name})}());
+#else
+          form.set("${column.Name}Display", "${column.Value.GlobalValueRef}."+String.valueOf(${util.firstLower($bean.Name)}.get${util.firstUpper(${column.Name})}()));
+#end
+#else
+#if($util.isStringType($column.Type))
+          form.set("${column.Name}Display", "${bean.Name}.${column.Name}."+${util.firstLower($bean.Name)}.get${util.firstUpper(${column.Name})}());
+#else
+          form.set("${column.Name}Display", "${bean.Name}.${column.Name}."+String.valueOf(${util.firstLower($bean.Name)}.get${util.firstUpper(${column.Name})}()));
+#end
+#end
+        } catch (MissingResourceException mre) {
+          form.set("${column.Name}Display", "not.available");
+        }
+#else
+#if($column.Type == "date")
+##        form.set("$column.Name", sdf.format(${util.firstLower($bean.Name)}.get$util.firstUpper($column.Name)()));
+        form.set("$column.Name",DAO.Date2String( ${util.firstLower($bean.Name)}.get$util.firstUpper($column.Name)()));
+
+#elseif($column.Type == "timestamp")
+        form.set("$column.Name",DAO.Date2String( ${util.firstLower($bean.Name)}.get$util.firstUpper($column.Name)()));
+#end
+#end
+#end
+      }
+    } catch (Exception e) {
+      generalError(request, e);
+      return mapping.findForward("failure");
+    }
+    return mapping.findForward("success");
+  }
+
+  /**
+   *  The performSave() method is used to insert into or update a ${bean.Name} object
+   *  into the database. The ${bean.Name}Form's strutsAction field is used to define
+   *  whether we perform an insert() or an update().
+   *
+   *  @param mapping      The ActionMapping used to select this instance.
+   *  @param actionForm   The optional ActionForm bean for this request.
+   *  @param request      The HTTP request to process.
+   *  @param response     The HTTP response to process.
+   *
+   *  @return             An ActionForward for either 'success' or 'failure'.
+   */
+  private ActionForward performSave(ActionMapping mapping, ActionForm actionForm, HttpServletRequest request, HttpServletResponse response) {
+    DynaValidatorForm form = (DynaValidatorForm) actionForm;
+    ActionMessages errors = form.validate(mapping, request);
+##    System.out.println(errors.size());
+    if (!errors.isEmpty()) {
+      saveErrors(request, errors);
+      return mapping.getInputForward();
+    }
+    try {
+#datasource()
+
+      ${bean.Name} $util.firstLower($bean.Name) = new ${bean.Name}();
+			preSave(mapping, actionForm, request, response);
+      org.apache.commons.beanutils.BeanUtils.copyProperties($util.firstLower($bean.Name), form);
+#foreach($column in $util.getAllColumnsNoAuto($bean))
+#if($column.Type == "date")
+      ${util.firstLower($bean.Name)}.set$util.firstUpper($column.Name)(DAO.string2Timestamp((String)form.get("$column.Name")));
+#elseif($column.Type == "timestamp")
+//      ${util.firstLower($bean.Name)}.set$util.firstUpper($column.Name)(java.sql.Timestamp.valueOf(form.get$util.firstUpper($column.Name)()));
+      ${util.firstLower($bean.Name)}.set$util.firstUpper($column.Name)(DAO.string2Timestamp((String)form.get("$column.Name")));
+#end
+#end
+##    orderTypes.setPOSTED_ON(new java.sql.Timestamp(                               ( new Date().getTime())));
+
+
+      String strutsAction = (String) form.get("strutsAction");
+      if (ADD.equals(strutsAction)) {
+#foreach($pk in $bean.PrimaryKey.Column)
+        $util.fqJavaType($pk.Type) $pk.Name = ${util.firstLower($bean.Name)}.get${util.firstUpper($pk.Name)}();
+#end
+        if (${util.firstLower($bean.Name)}DAO.retrieve(#pklist($bean)) == null) {
+          ${util.firstLower($bean.Name)}DAO.insert(${util.firstLower($bean.Name)});
+        } else {
+          sqlDuplicateError(request, "$bean.Name");
+          return mapping.findForward("failure");
+        }
+      } else if (EDIT.equals(strutsAction)) {
+        ${util.firstLower($bean.Name)}DAO.update(${util.firstLower($bean.Name)});
+      }
+    } catch (Exception e) {
+      generalError(request, e);
+      return mapping.findForward("failure");
+    }
+    return mapping.findForward("success");
+  }
+
+  /**
+   *  The performEdit() method is used to retrieve a ${bean.Name} object based
+   *  on the primary key(s) as defined by the request's parameters. The
+   *  ${bean.Name}Form's field strutsAction is set to EDIT constant value
+   *  so an update will be used when performSave() is invoked.
+   *
+   *  @param mapping      The ActionMapping used to select this instance.
+   *  @param actionForm   The optional ActionForm bean for this request.
+   *  @param request      The HTTP request to process.
+   *  @param response     The HTTP response to process.
+   *
+   *  @return             An ActionForward for either 'success' or 'failure'.
+   */
+  private ActionForward performEdit(ActionMapping mapping, ActionForm actionForm, HttpServletRequest request, HttpServletResponse response) {
+    DynaValidatorForm form = (DynaValidatorForm) actionForm;
+    form.set("strutsAction", EDIT);
+    try {
+#datasource()
+
+#foreach($pk in $bean.PrimaryKey.Column)
+      $util.fqJavaType($pk.Type) $pk.Name = $util.requestParam($pk);
+#end
+
+      ${bean.Name} $util.firstLower($bean.Name) = ${util.firstLower($bean.Name)}DAO.retrieve(#pklist($bean));
+      org.apache.commons.beanutils.BeanUtils.copyProperties(form, $util.firstLower($bean.Name));
+#foreach($pk in $bean.PrimaryKey.Column)
+#if($pk.Type == "date")
+      form.set("$pk.Name", sdf.format($pk.Name));
+#elseif($pk.Type == "timestamp")
+      form.set("$pk.Name", ${pk.Name}.toString());
+#end
+#end
+#foreach($attr in $bean.Attribute.Column)
+#if($attr.Type == "date")
+DAO.Date2String(
+##      form.set("$attr.Name", sdf.format(${util.firstLower($bean.Name)}.get$util.firstUpper($attr.Name)()));
+      form.set("$attr.Name", DAO.Date2String(${util.firstLower($bean.Name)}.get$util.firstUpper($attr.Name)()));
+#elseif($attr.Type == "timestamp")
+##      form.set("$attr.Name", ${util.firstLower($bean.Name)}.get$util.firstUpper($attr.Name)().toString());
+      form.set("$attr.Name", DAO.Date2String(${util.firstLower($bean.Name)}.get$util.firstUpper($attr.Name)()));
+#end
+#if($attr.Type == "password")
+      form.set("${attr.Name}2", ${util.firstLower($bean.Name)}.get$util.firstUpper($attr.Name)());
+#end
+#end
+
+    } catch (Exception e) {
+      generalError(request, e);
+      return mapping.findForward("failure");
+    }
+    return mapping.findForward("success");
+  }
+
+  /**
+   *  The performAdd() method is used to prepare the ${bean.Name}Form for adding a
+   *  new ${bean.Name} object to the database by setting the field strutsAction to
+   *  ADD constant value so an insert will be used when performSave() is
+   *  invoked.
+   *
+   *  @param mapping      The ActionMapping used to select this instance.
+   *  @param actionForm   The optional ActionForm bean for this request.
+   *  @param request      The HTTP request to process.
+   *  @param response     The HTTP response to process.
+   *
+   *  @return             An ActionForward for 'success'.
+   */
+  private ActionForward performAdd(ActionMapping mapping, ActionForm actionForm, HttpServletRequest request, HttpServletResponse response) {
+    DynaValidatorForm form = (DynaValidatorForm) actionForm;
+    form.set("strutsAction", ADD);
+    return mapping.findForward("success");
+  }
+
+  /**
+   *  The performReport() method is used to prepare the ${bean.Name}Form for adding a
+   *  new ${bean.Name} object to the database by setting the field strutsAction to
+   *  ADD constant value so an insert will be used when performSave() is
+   *  invoked.
+   *
+   *  @param mapping      The ActionMapping used to select this instance.
+   *  @param actionForm   The optional ActionForm bean for this request.
+   *  @param request      The HTTP request to process.
+   *  @param response     The HTTP response to process.
+   *
+   *  @return             An ActionForward for 'success'.
+   */
+  private ActionForward performReport(ActionMapping mapping, ActionForm actionForm, HttpServletRequest request, HttpServletResponse response) {
+    return mapping.findForward("success");
+  }
+
+  /**
+   *  The performRemove() method is used to retrieve a ${bean.Name} object by
+   *  invoking the performView(). It assumes that the object is displayed to
+   *  the user to confirm that this object should be deleted. The actual act
+   *  of deleting the row from the database is done by performTrash().
+   *
+   *  @param mapping      The ActionMapping used to select this instance.
+   *  @param actionForm   The optional ActionForm bean for this request.
+   *  @param request      The HTTP request to process.
+   *  @param response     The HTTP response to process.
+   *
+   *  @return             An ActionForward for either 'success' or 'failure'.
+   */
+  private ActionForward performRemove(ActionMapping mapping, ActionForm actionForm, HttpServletRequest request, HttpServletResponse response) {
+   return performView(mapping, actionForm, request, response);
+###	datasource()
+###foreach($pk in $bean.PrimaryKey.Column)
+##      $util.fqJavaType($pk.Type) $pk.Name = $util.requestParam($pk);
+###end
+##      ${util.firstLower($bean.Name)}DAO.delete(#pklist($bean));
+##    } catch (Exception e) {
+##      generalError(request, e);
+##      return mapping.findForward("failure");
+##    }
+##    return mapping.findForward("success");
+
+  }
+
+  /**
+   *  The performTrash() method is used to remove a ${bean.Name} object from the
+   *  database. The ${bean.Name}Forms's primary key(s) are used to define the table
+   *  row that is to be deleted.
+   *
+   *  @param mapping      The ActionMapping used to select this instance.
+   *  @param actionForm   The optional ActionForm bean for this request.
+   *  @param request      The HTTP request to process.
+   *  @param response     The HTTP response to process.
+   *
+   *  @return             An ActionForward for either 'success' or 'failure'.
+   */
+  private ActionForward performTrash(ActionMapping mapping, ActionForm actionForm, HttpServletRequest request, HttpServletResponse response) {
+    DynaValidatorForm form = (DynaValidatorForm) actionForm;
+    try {
+#datasource()
+
+#foreach($pk in $bean.PrimaryKey.Column)
+      $util.fqJavaType($pk.Type) $pk.Name = $util.requestParam($pk);
+#end
+      ${util.firstLower($bean.Name)}DAO.delete(#pklist($bean));
+    } catch (Exception e) {
+      generalError(request, e);
+      return mapping.findForward("failure");
+    }
+    return mapping.findForward("success");
+  }
+
+###set($sqlvarlist = $util.getQueryVariableColumnList($bean, $query))
+#macro(qrystrvaluelist $bean $query)
+#foreach($col in $util.getQueryVariableColumnList($bean, $query))
+#if($velocityCount == 1)String.valueOf($col.Name)#else, String.valueOf($col.Name)#end#end#end
+#macro(qryvaluelist $bean $query)
+#foreach($col in $util.getQueryVariableColumnList($bean, $query))
+#if($velocityCount == 1)$col.Name#else, $col.Name#end#end#end
+#macro(urlvarlist $cols)#foreach($col in $cols)
+#if($velocityCount == 1)+"?$col.Name="+$col.Name#else+"&$col.Name="+$col.Name#end#end#end
+#foreach($query in $bean.Query)
+#set($sqlvarlist = $util.getQueryVariableColumnList($bean, $query))
+#if($query.Result == "list")
+#macro(querycondition $bean $query)
+#foreach($cond in $query.Condition)
+#if($velocityCount == 1) WHERE $util.java2sqlName($cond.FieldName) $cond.FieldCondition#else AND $util.java2sqlName($cond.FieldName) $cond.FieldCondition#end
+#end
+#if($util.arrLen($query.AggregateCondition) > 0)
+ HAVING $formatter.formatArray($conds, " AND ")
+#end
+#end
+  /**
+   *  The perform${query.Name}() method is used to retrieve a subset of ${bean.Name}
+   *  objects based on the ${bean.Name}Form's field value(s). The subset is bound by
+   *  the request parameter 'pager.offset' and the PAGE_LENGTH constant.
+   *
+   *  @param mapping      The ActionMapping used to select this instance.
+   *  @param actionForm   The optional ActionForm bean for this request.
+   *  @param request      The HTTP request to process.
+   *  @param response     The HTTP response to process.
+   *
+   *  @return             An ActionForward for either 'success' or 'failure'.
+   */
+  private ActionForward perform${query.Name}(ActionMapping mapping, ActionForm actionForm, HttpServletRequest request, HttpServletResponse response) {
+    DynaValidatorForm form = (DynaValidatorForm) actionForm;
+    try {
+#datasource()
+      int offset;
+      int length = PAGE_LENGTH;
+      String pageOffset = request.getParameter("pager.offset");
+      if (pageOffset == null || pageOffset.equals("")) {
+        offset = 0;
+      } else {
+        offset = Integer.parseInt(pageOffset);
+      }
+
+#foreach($col in $sqlvarlist)
+      $util.javaType($col.Type) $col.Name = ($util.javaType($col.Type)) form.get("${col.Name}");
+#end
+      String[] objKeys = {"${bean.Name}", "${query.Name}", #qrystrvaluelist($bean $query)};
+      String objKey = CacheManager.createKey(objKeys);
+      Integer size = (Integer)SizeCacheManager.getCache(objKey);
+      if(size == null) {
+        size = new Integer(${util.firstLower($bean.Name)}DAO.getSize("#tableName($bean)", "#querycondition($bean $query)"));
+        SizeCacheManager.putCache(size, objKey, $bean.CacheMtl);
+      }
+      List ${util.firstLower($bean.Name)}s = ${util.firstLower($bean.Name)}DAO.${query.Name}(offset, length, #qryvaluelist($bean $query));
+#if($build.UrlPattern == "*.do")
+      String url = request.getContextPath()+"/"+mapping.getPath()+".do"#urlvarlist($sqlvarlist);
+#else
+      String url = request.getContextPath()+"/do"+mapping.getPath()#urlvarlist($sqlvarlist);
+#end
+      String pagerHeader = Pager.generate(offset, size.intValue(), length, url);
+      request.setAttribute("pagerHeader", pagerHeader);
+
+      request.setAttribute("${bean.Name.toUpperCase()}S", ${util.firstLower($bean.Name)}s);
+    } catch (Exception e) {
+      generalError(request, e);
+      return mapping.findForward("failure");
+    }
+
+    return mapping.findForward("success");
+  }
+#else
+  /**
+   *  The perform${query.Name}() method is used to retrieve a ${bean.Name}
+   *  object based on the ${bean.Name}Form's field value(s).
+   *
+   *  @param mapping      The ActionMapping used to select this instance.
+   *  @param actionForm   The optional ActionForm bean for this request.
+   *  @param request      The HTTP request to process.
+   *  @param response     The HTTP response to process.
+   *
+   *  @return             An ActionForward for either 'success' or 'failure'.
+   */
+  private ActionForward perform${query.Name}(ActionMapping mapping, ActionForm actionForm, HttpServletRequest request, HttpServletResponse response) {
+    DynaValidatorForm form = (DynaValidatorForm) actionForm;
+    try {
+#datasource()
+
+#foreach($pk in $bean.PrimaryKey.Column)
+      $util.fqJavaType($pk.Type) $pk.Name = $util.requestParam($pk);
+#end
+      ${bean.Name} $util.firstLower($bean.Name) = ${util.firstLower($bean.Name)}DAO.retrieve(#pklist($bean));
+      request.setAttribute("$bean.Name.toUpperCase()", $util.firstLower($bean.Name));
+    } catch (Exception e) {
+      generalError(request, e);
+      return mapping.findForward("failure");
+    }
+    return mapping.findForward("success");
+  }
+#end
+#end
+#end
+
+#if($bean.GenerateProcess)
+#foreach($process in $bean.Process)
+  /**
+   *  The perform${util.firstUpper($process.Name)}() method initiates the ${util.firstUpper($process.Name)} process. It is
+   *  used to clear the ${bean.Name}Form at the start of the process. The ${bean.Name}Form
+   *  is assumed to have a session scope so the values can be collected by
+   *  one or more steps in the process.
+   *
+   *  @param mapping      The ActionMapping used to select this instance.
+   *  @param actionForm   The optional ActionForm bean for this request.
+   *  @param request      The HTTP request to process.
+   *  @param response     The HTTP response to process.
+   *
+   *  @return             An ActionForward for 'success'.
+   */
+  private ActionForward perform${util.firstUpper($process.Name)}(ActionMapping mapping, ActionForm actionForm, HttpServletRequest request, HttpServletResponse response) {
+    DynaValidatorForm form = (DynaValidatorForm) actionForm;
+    form.reset(mapping, request);
+    return mapping.findForward("success");
+  }
+
+#if($process.Page)
+  /**
+   *  The perform${util.firstUpper($process.Name)}xx method is one of the steps in the ${util.firstUpper($process.Name)}
+   *  process. Its primary focus is to translate value of the ${bean.Name}Form's
+   *  strutsButton field into the appropriate ActionForward. The buttons that
+   *  are available depends on the step in the process.
+   *  <ul><li>cancel - on steps 1..n</li>
+   *  <li>back - on steps 2..n</li>
+   *  <li>continue - on steps 1..n-1</li>
+   *  <li>finish - on step n</li></ul>
+   *
+   *  @param mapping      The ActionMapping used to select this instance.
+   *  @param actionForm   The optional ActionForm bean for this request.
+   *  @param request      The HTTP request to process.
+   *  @param response     The HTTP response to process.
+   *
+   *  @return             An ActionForward for either 'success', 'failure',
+   *                      'cancel', 'back', 'continue' or 'finish'.
+   */
+#end
+
+#foreach($page in $process.Page)
+  private ActionForward perform${util.firstUpper($process.Name)}$velocityCount(ActionMapping mapping, ActionForm actionForm, HttpServletRequest request, HttpServletResponse response) {
+    DynaValidatorForm form = (DynaValidatorForm) actionForm;
+    String strutsButton = (String)form.get("strutsButton");
+    try {
+      MessageResources prop = getResources(request);
+      // process code here
+      if(strutsButton.equals(prop.getMessage("label.cancel"))) {
+        // cancel action here
+        return mapping.findForward("cancel");
+#if($velocityCount > 1)
+      } else if(strutsButton.equals(prop.getMessage("label.back"))) {
+        // back action here
+        return mapping.findForward("back");
+#end
+#if($velocityCount != $process.getPageCount())
+      } else if(strutsButton.equals(prop.getMessage("label.continue"))) {
+        // continue action here
+        return mapping.findForward("continue");
+#else
+      } else if(strutsButton.equals(prop.getMessage("label.finish"))) {
+        // finish action here
+        form.set("strutsAction", ADD);
+        return performSave(mapping, actionForm, request, response);
+#end
+#foreach($forward in $page.Forward)
+      } else if(strutsButton.equals(prop.getString("label.${processName}${velocityCount}.${forward.Name}"))) {
+        return mapping.findForward("$forward.Name");
+#end
+      }
+      return mapping.findForward("failure");
+    } catch (Exception e) {
+      generalError(request, e);
+      return mapping.findForward("failure");
+    }
+  }
+#end
+#end
+#end
+
+  /**
+   *  The sqlDuplicateError() method is used to generate a duplicate key error
+   *  for the object specified in objName.
+   *
+   *  @param request      The HTTP request to process.
+   *  @param objName      The name of the object.
+   */
+  private void sqlDuplicateError(HttpServletRequest request, String objName) {
+    ActionMessages aes = new ActionMessages();
+    aes.add(aes.GLOBAL_MESSAGE, new ActionMessage("errors.database.duplicate", objName));
+    saveErrors(request, aes);
+    if (__log.isErrorEnabled()) {
+      __log.error(" [${bean.Name}] Duplicate key Error - " + objName);
+    }
+  }
+
+  /**
+   *  The generalError() method is used to add an exception error to the
+   *  ActionMessages and to generate a stack trace.
+   *
+   *  @param request      The HTTP request to process.
+   *  @param e            The exception.
+   */
+  private void generalError(HttpServletRequest request, Exception e) {
+    ActionMessages aes = new ActionMessages();
+    aes.add(aes.GLOBAL_MESSAGE, new ActionMessage("error.general", e.getMessage()));
+    saveErrors(request, aes);
+    e.printStackTrace();
+    if (__log.isErrorEnabled()) {
+      __log.error(" [${bean.Name}] Error - " + e.getMessage());
+    }
+  }
+}
+
